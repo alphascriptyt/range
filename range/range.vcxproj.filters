@@ -1,22 +1,46 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="engine">
+      <UniqueIdentifier>{6973cb8a-ed19-438b-9f05-cbb0852478f4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="math">
+      <UniqueIdentifier>{01b71117-50d1-42e3-a9de-c3743fe497f9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="range.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClCompile Include="range.cpp" />
+    <ClCompile Include="engine\engine.cpp" />
+    <ClCompile Include="engine\renderer\renderer.cpp" />
+    <ClCompile Include="engine\renderer\camera.cpp" />
+    <ClCompile Include="math\mat4D.cpp" />
+    <ClCompile Include="math\vec2D.cpp" />
+    <ClCompile Include="math\vec3D.cpp" />
+    <ClCompile Include="math\mathutils.cpp" />
+    <ClCompile Include="engine\renderer\colour.cpp" />
+    <ClCompile Include="engine\renderer\lightsource.cpp" />
+    <ClCompile Include="engine\renderer\triangle.cpp" />
+    <ClCompile Include="engine\renderer\mesh.cpp" />
+    <ClCompile Include="engine\renderer\presets.cpp" />
+    <ClCompile Include="utils\utils.cpp" />
+    <ClCompile Include="utils\timer.cpp" />
+    <ClCompile Include="math\vectormaths.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="engine\engine.h" />
+    <ClInclude Include="engine\renderer\renderer.h" />
+    <ClInclude Include="engine\renderer\camera.h" />
+    <ClInclude Include="math\mat4D.h" />
+    <ClInclude Include="math\vec2D.h" />
+    <ClInclude Include="math\vec3D.h" />
+    <ClInclude Include="math\mathutils.h" />
+    <ClInclude Include="engine\renderer\colour.h" />
+    <ClInclude Include="engine\renderer\lightsource.h" />
+    <ClInclude Include="engine\renderer\triangle.h" />
+    <ClInclude Include="engine\renderer\mesh.h" />
+    <ClInclude Include="engine\renderer\presets.h" />
+    <ClInclude Include="utils\utils.h" />
+    <ClInclude Include="utils\timer.h" />
+    <ClInclude Include="math\vectormaths.h" />
   </ItemGroup>
 </Project>
