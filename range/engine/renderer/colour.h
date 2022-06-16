@@ -8,29 +8,23 @@ class Colour {
 	void clampComponents();
 
 public:
+	// components
 	int r = 0;
 	int g = 0;
 	int b = 0;
 
+	// constructors
 	Colour();
 	Colour(uint8_t _r, uint8_t _g, uint8_t _b);
-	Colour(uint32_t _colour);
+	Colour(uint32_t _colour); // unpack XRGB into R,G,B components
 
-	uint32_t toInt();
-	void print();
-	SDL_Colour toSDL();
+	// methods
+	uint32_t toInt();		// pack as XRGB int
+	void print();			// print R,G,B components
+	SDL_Colour toSDL();		// convert to SDL_Colour type
 };
 
-class DiffuseColour {
-public:
-	float r = 0;
-	float g = 0;
-	float b = 0;
-
-	DiffuseColour();
-	DiffuseColour(float _r, float _g, float _b);
-};
-
+// predefined colours
 namespace COLOUR {
 	extern Colour WHITE;
 	extern Colour SILVER;

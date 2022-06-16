@@ -16,7 +16,7 @@ bool Engine::setup(int w, int h) {
 	// create the renderer
 	renderer = Renderer(w, h);
 
-	// intialize the renderer
+	// try intialize the renderer
 	if (!renderer.init()) {
 		return false;
 	}
@@ -109,9 +109,11 @@ void Engine::handleEvents(float& dt) {
 			case (SDLK_TAB):
 				if (SDL_GetRelativeMouseMode()) {
 					SDL_SetRelativeMouseMode(SDL_FALSE);
+					handlingInput = false;
 				}
 				else {
 					SDL_SetRelativeMouseMode(SDL_TRUE);
+					handlingInput = true;
 				}
 				break;
 
@@ -124,6 +126,9 @@ void Engine::handleEvents(float& dt) {
 
 			// handle mouse movement
 		case (SDL_MOUSEMOTION):
+			// only process mousemotion if camera if handlingInput
+			if (!handlingInput) { break; }
+
 			// calculate change in pitch and yaw
 			float sensitivity = 0.1; // hardcoded mouse sensitivity 
 
@@ -132,8 +137,7 @@ void Engine::handleEvents(float& dt) {
 			float y = toRadians((float)ev.motion.xrel * sensitivity);
 
 			// normalize and set the changes in viewangles
-			renderer.camera.processPitch(p);
-			renderer.camera.processYaw(y);
+			renderer.camera.updateViewAngles(y, p);
 
 			// calculate the camera's looking direction
 			renderer.camera.direction.x = std::sin(renderer.camera.yaw);
@@ -145,9 +149,11 @@ void Engine::handleEvents(float& dt) {
 		}
 	}
 
-	// move the camera
-	const Uint8* keys = SDL_GetKeyboardState(NULL);
-	renderer.camera.move(keys, dt);
+	// move camera
+	if (handlingInput) {
+		const Uint8* keys = SDL_GetKeyboardState(NULL);
+		renderer.camera.move(keys, dt);
+	}
 }
 
 int Engine::getCurrentFPS(Uint64& start_perf) {
@@ -174,8 +180,9 @@ void Engine::loop() {
 	Uint64 current_ticks = SDL_GetTicks();
 	Uint64 last_ticks = current_ticks;
 
+	// mainloop 
 	while (active) {
-		// mainloop 
+		// get initial ticks
 		start_perf = SDL_GetPerformanceCounter();
 		
 		// handle the next event
@@ -190,12 +197,12 @@ void Engine::loop() {
 		// calculate performance
 		fps = getCurrentFPS(start_perf); // calculate delta time and fps
 
+		// TEMP: display the FPS
 		SDL_SetWindowTitle(renderer.window, std::to_string(fps).c_str());
 	}
 }
 
 void Engine::exit() {
 	// release SDL resources
-	SDL_DestroyTexture(renderer.getBufferTexture());
 	SDL_Quit();
 }

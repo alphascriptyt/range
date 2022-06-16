@@ -32,51 +32,42 @@ void Renderer::createProjectionMatrix() {
 
 bool Renderer::init() {
 	// create window
-	window = SDL_CreateWindow("Test", 50, 50, WN_WIDTH, WN_HEIGHT, SDL_WINDOW_SHOWN);
+	window = SDL_CreateWindow("Test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WN_WIDTH, WN_HEIGHT, SDL_WINDOW_SHOWN);
 
 	if (!window) {
 		printf("Failed to create window - %s\n", SDL_GetError());
 		return false;
 	}
-
-	// create renderer
-	SDL_RENDERER = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-
-	if (!SDL_RENDERER) {
-		printf("Failed to create renderer - %s\n", SDL_GetError());
-		return false;
-	}
-
+	
 	// check for failures creating the buffer
 	if (!initBuffers()) {
 		return false;
 	}
-
+	
 	// create the viewpoint lightsource (has to be created first so we can access it easily)
 	LightSource* viewpoint = new LightSource(camera.position, COLOUR::WHITE, 10); // create on heap so GC doesn't delete it
 
 	return true;
 }
 bool Renderer::initBuffers() {
-	// create a texture for rendering pixel buffer as RGBA
-	bufferTexture = SDL_CreateTexture(SDL_RENDERER,
-		SDL_PIXELFORMAT_ABGR32,			// RGBA 
-		SDL_TEXTUREACCESS_STREAMING,	// allow for texture to be locked and unlocked for streaming
-		WN_WIDTH,
-		WN_HEIGHT);
+	// try get a pointer to the SDL window surface
+	windowSurface = SDL_GetWindowSurface(window);
 
-	if (bufferTexture == nullptr)
-	{
-		printf("Could not create a buffer texture: %s\n", SDL_GetError());
+	// check for errors
+	if (!windowSurface) {
+		printf("Failed to GetWindowSurface: %s\n", SDL_GetError());
 		return false;
 	}
 
-	// lock memory so we can write to it (needed for first frame)
-	SDL_LockTexture(bufferTexture, NULL, (void**)&pixelBuffer, &bufferPitch);
+	// get access to the pixel buffer 
+	pixelBuffer = (uint32_t*)windowSurface->pixels;
 
-	// calculate number of bytes in one row of buffer
-	bufferLength = WN_WIDTH * WN_HEIGHT;
+	// find the buffer's pitch (number of bytes in one row of buffer)
+	bufferPitch = windowSurface->pitch;
 
+	// calculate the length of the buffer
+	bufferLength = windowSurface->w * windowSurface->h;
+	
 	// initialize depth buffer with z-far
 	for (int i = 0; i < bufferLength; ++i) {
 		depthBuffer.push_back(farPlane);
@@ -254,10 +245,10 @@ void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill) {
 
 	// get v4's depth
 	float mz = (v3.w - v1.w) / (v3.x - v1.x);	// get gradient of depths
-	float w = v1.w + ((x - v1.x) * mz);		// linear interpolate to get v4's depth
+	float w = v1.w + ((x - v1.x) * mz);			// linear interpolate to get v4's depth
 
 	V2 v4(x, v2.y, w);
-
+	
 	// draw split triangles
 	drawFlatBottomTriangle(v1, v2, v4, colour, fill);
 	drawFlatTopTriangle(v2, v4, v3, colour, fill);
@@ -418,28 +409,6 @@ V2 Renderer::project(V3& rotated) {
 // rendering functions
 void Renderer::setBackgroundColour(int colour) {
 	std::fill(pixelBuffer, pixelBuffer + bufferLength, colour);
-}
-
-void Renderer::renderBuffer() {
-	// render the buffer
-	
-	// lock memory so we can write to it
-	SDL_LockTexture(bufferTexture, NULL, (void**)&pixelBuffer, &bufferPitch);
-
-	// align in VRAM
-	bufferPitch /= sizeof(uint32_t);
-
-	// tell the GPU that we are done editing the texture
-	SDL_UnlockTexture(bufferTexture);
-
-	// copy our texture in VRAM to the display framebuffer in VRAM;
-	SDL_RenderCopy(SDL_RENDERER, bufferTexture, NULL, NULL);
-
-	// present renderer contents to display
-	SDL_RenderPresent(SDL_RENDERER);
-
-	// re-lock texture so we can edit buffer
-	SDL_LockTexture(bufferTexture, NULL, (void**)&pixelBuffer, &bufferPitch);
 }
 
 void Renderer::rotateMeshFace(V3& v1, V3& v2, V3& v3, V3& pos, float pitch, float yaw) {
@@ -605,7 +574,7 @@ void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 
 	// set the colour of the mesh
 	base_colour = face_colour;
-}
+} 
 
 void Renderer::render() {
 	// clear screen
@@ -653,7 +622,8 @@ void Renderer::render() {
 			if (!backfaceCull(v1, v2, v3)) {
 				continue; // skip face if on the back of a mesh
 			}
-			
+			// TODO: AFTER THIS IS SLOW
+
 			// clip triangle against near plane
 			std::vector<Triangle> clipped = {}; // clipping may return multiple triangles
 			clipTriangle(v1, v2, v3, clipped);
@@ -663,7 +633,7 @@ void Renderer::render() {
 				// apply lighting
 				Colour colour = Colour(mesh->colours[i]->toInt());
 				bool fill = true;
-
+				
 				// only light filled meshes
 				if (fill) {
 					// apply point lighting
@@ -678,12 +648,11 @@ void Renderer::render() {
 				V2 pv3 = project(clipped[t].v3);
 
 				// render the projected triangle
-				drawTriangle(pv1, pv2, pv3, colour.toInt(), fill);
+				drawTriangle(pv1, pv2, pv3, colour.toInt(), fill); // very slow.
 			}
 		}
 	}
 	
-
 	// draw crosshair
 	// calculate the center of the page (using bit shift for faster divide by 2)
 	int center_x = WN_WIDTH >> 1;
@@ -695,10 +664,5 @@ void Renderer::render() {
 	drawRectangle(center_x - thickness, center_y - thickness, center_x + thickness, center_y + thickness, COLOUR::WHITE.toInt());
 
 	// render the buffer to the screen
-	renderBuffer();
-}
-
-// private member getters
-SDL_Texture* Renderer::getBufferTexture() {
-	return bufferTexture;
+	SDL_UpdateWindowSurface(window);
 }

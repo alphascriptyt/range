@@ -1,6 +1,7 @@
 #include "colour.h"
 #include <iostream>
 
+// constructors
 Colour::Colour() {
 	r = 0;
 	g = 0;
@@ -14,11 +15,13 @@ Colour::Colour(uint8_t _r, uint8_t _g, uint8_t _b) {
 }
 
 Colour::Colour(uint32_t _colour) {
-	r = (_colour >> 24) & 0xff;
-	g = (_colour >> 16) & 0xff;
-	b = (_colour >> 8) & 0xff;
+	// extract RGB from XRGB colour (ignore first byte)
+	r = (_colour >> 16) & 0xff;
+	g = (_colour >> 8) & 0xff;
+	b = _colour & 0xff;
 }
 
+// methods
 void Colour::clampComponents() {
 	// method for clamping R,G,B from 0-255
 
@@ -38,10 +41,13 @@ void Colour::clampComponents() {
 uint32_t Colour::toInt() {
 	// return an integer representation of RGB
 	clampComponents();
-	return (r << 24) | (g << 16) | (b << 8);
+	
+	// pack into XRGB format to match SDL surface
+	return (r << 16) | (g << 8) | b;
 }
 
 void Colour::print() {
+	// print the colour
 	std::cout << (int)r << " " << (int)g << " " << (int)b << std::endl;
 }
 
@@ -56,17 +62,7 @@ SDL_Colour Colour::toSDL() {
 	return c;
 }
 
-// diffuse Colour
-DiffuseColour::DiffuseColour() {
-
-}
-
-DiffuseColour::DiffuseColour(float _r, float _g, float _b) {
-	r = _r;
-	g = _g;
-	b = _b;
-}
-
+// predefined colours
 namespace COLOUR {
 	Colour WHITE(255, 255, 255);
 	Colour SILVER(191, 191, 191);

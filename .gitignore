@@ -2,6 +2,3 @@
 .vs
 x64
 range/x64
-range/libs/SDL2
-range/SDL2.dll
-range/SDL2_image.dll

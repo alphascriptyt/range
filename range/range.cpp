@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
 	
 	// keep engine loading of scenes so i can use 3denvcreator to make map?
 	//engine.loadScene("C://Users//olive//OneDrive - York College//College Work//Computer Science//AS2//2nd Year Project//Coursework//Program//FINAL//Final Version (not uploaded)//3DEnvironmentCreator-OP//traffic.txt");
-	V3 pos(0, 0, 10);
+	V3 pos(5, 0, 10);
 	V3 size(2, 2, 2);
 	Mesh mesh(Cube::vertices, Cube::faces, pos, size, COLOUR::WHITE);
 	

@@ -13,9 +13,9 @@ Camera::Camera(V3& pos) {
 	position = pos;	 // set to custom position
 }
 
+// methods
 
 // move camera dependent on key press
-
 void Camera::move(const Uint8* keys, float dt) {
 	// moving forwards
 	if (keys[SDL_SCANCODE_W]) {
@@ -78,4 +78,9 @@ void Camera::processYaw(float y) {
 		// need to account for the amount past
 		yaw -= TWO_PI;
 	}
+}
+
+void Camera::updateViewAngles(float y, float p) {
+	processYaw(y);
+	processPitch(p);
 }
