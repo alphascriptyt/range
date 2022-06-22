@@ -52,15 +52,19 @@ V3 vectorCrossProduct(V3& v1, V3& v2) {
 float vectorDotProduct(V3& v1, V3& v2) {
 	return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
-
+#include <iostream>
 V3 vectorIntersectPlane(V3& v1, V3& v2, V3& plane_normal, V3& plane_point) {
 	// standard algorithm for calculating the intersection between a point and plane
 	float plane_d = -vectorDotProduct(plane_normal, plane_point);
 
 	float ad = vectorDotProduct(v1, plane_normal);
 	float bd = vectorDotProduct(v2, plane_normal);
-	float t = (-plane_d - ad) / (bd - ad);
 	V3 line_start_to_end = vectorSub(v2, v1);
+
+
+
+	float t = (-plane_d - ad) / vectorDotProduct(line_start_to_end, plane_normal);
+	
 	V3 line_to_intersect = line_start_to_end;
 	line_to_intersect.x *= t;
 	line_to_intersect.y *= t;

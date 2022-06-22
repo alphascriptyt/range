@@ -12,6 +12,15 @@
 
 #include <vector>
 
+struct Plane {
+	V3 normal;
+	V3 point;
+	Plane(V3& n, V3& p) {
+		normal = n;
+		point = p;
+	}
+};
+
 // renderer class to wrap SDL_Renderer and my own rendering
 class Renderer {
 private:
@@ -44,7 +53,10 @@ private:
 	bool testAndSetDepth(int pos, float z);				// depth testing
 	bool backfaceCull(V3& v1, V3& v2, V3& v3);			// cull backfaces
 
+	std::vector<Plane> getPlanes();
+	void clipTrianglesAgainstPlane(std::vector<Triangle>& triangles, Plane& plane);
 	float findSignedDistance(V3& v, V3& plane_normal, V3& plane_point);			// clipping helper
+	void performFrustumCulling(V3& v1, V3& v2, V3& v3, std::vector<Triangle>& triangles);	// clip triangles
 	void clipTriangle(V3& v1, V3& v2, V3& v3, std::vector<Triangle>& clipped);	// clip triangles
 
 	V2 project(V3& rotated);
