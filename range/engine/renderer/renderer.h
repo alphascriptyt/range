@@ -54,9 +54,10 @@ private:
 	bool backfaceCull(V3& v1, V3& v2, V3& v3);			// cull backfaces
 
 	std::vector<Plane> getPlanes();
+	int getVisibleTriangles(std::vector<Triangle>& triangles, std::vector<Plane>& planes);
 	void clipTrianglesAgainstPlane(std::vector<Triangle>& triangles, Plane& plane);
 	float findSignedDistance(V3& v, V3& plane_normal, V3& plane_point);			// clipping helper
-	void performFrustumCulling(V3& v1, V3& v2, V3& v3, std::vector<Triangle>& triangles);	// clip triangles
+	void performFrustumCulling(std::vector<Triangle>& triangles_to_cull, std::vector<Plane>& planes);	// clip triangles
 	void clipTriangle(V3& v1, V3& v2, V3& v3, std::vector<Triangle>& clipped);	// clip triangles
 
 	V2 project(V3& rotated);

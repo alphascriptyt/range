@@ -15,6 +15,7 @@ public:
 	
 	// methods
 	float size();			// return the size of the vector
+	float sizeSquared();	// return the size squared of the vector (more performance friendly)
 	void normalize();		// normalize the vector (doesn't include w)
 	void makePositive();	// make the vector positive
 	void print();			// easily print vector for debugging

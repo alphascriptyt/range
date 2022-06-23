@@ -22,6 +22,10 @@ float V3::size() {
 	return sqrtf(x * x + y * y + z * z);
 }
 
+float V3::sizeSquared() {
+	return x * x + y * y + z * z;
+}
+
 void V3::normalize() {
 	// make the vector's size 1
 	float magnitude = size();

@@ -292,50 +292,49 @@ float Renderer::findSignedDistance(V3& v, V3& plane_normal, V3& plane_point) {
 std::vector<Plane> Renderer::getPlanes() {
 	// define origin
 	V3 origin(0, 0, 0);
-
+	
 	// define the near plane
 	V3 near_normal = V3(0, 0, 1);
 	V3 near_point = V3(0, 0, nearPlane);
 	Plane near(near_normal, near_point);
 
 	// define other planes
-	V3 left_normal(1, 0, 1);
+	V3 left_normal(-1, 0, 1);
 	left_normal.normalize();
-	Plane left(left_normal, origin);
+	Plane left(left_normal, near_point);
 
-	V3 right_normal(-1, 0, 1);
+	V3 right_normal(1, 0, 1);
 	right_normal.normalize();
-	Plane right(right_normal, origin);
+	Plane right(right_normal, near_point);
 
 	V3 top_normal(0, -1, 1);
 	top_normal.normalize();
-	Plane top(top_normal, origin);
+	Plane top(top_normal, near_point);
 
 	V3 bottom_normal(0, 1, 1);
 	bottom_normal.normalize();
-	Plane bottom(bottom_normal, origin);
+	Plane bottom(bottom_normal, near_point);
 
 	std::vector<Plane> planes;
 	planes.push_back(near);
-	planes.push_back(left);
-	planes.push_back(right);
+	planes.push_back(left); // these two are screwing up
+	planes.push_back(right); // these two are screwing up, everything else works
 	planes.push_back(top);
 	planes.push_back(bottom);
-
+	
 	return planes;
 }
 
-void Renderer::performFrustumCulling(V3& v1, V3& v2, V3& v3, std::vector<Triangle>& triangles) {
-	std::vector<Plane> planes = getPlanes();
+void Renderer::performFrustumCulling(std::vector<Triangle>& triangles_to_cull, std::vector<Plane>& planes) {
+	//std::vector<Plane> planes = getPlanes();
 
-	std::vector<Triangle> clipped;
-	Triangle tri = Triangle(v1, v2, v3);
-	clipped.push_back(tri);
+	std::vector<Triangle> clipped = triangles_to_cull;
+	
 	for (auto& plane : planes) {
 		clipTrianglesAgainstPlane(clipped, plane);
 	}
-
-	triangles = clipped;
+	
+	triangles_to_cull = clipped;
 }
 
 void Renderer::clipTrianglesAgainstPlane(std::vector<Triangle>& triangles, Plane& plane) {
@@ -748,6 +747,70 @@ void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 	base_colour = face_colour;
 } 
 
+int Renderer::getVisibleTriangles(std::vector<Triangle>& triangles, std::vector<Plane>& planes) {
+	V3 center;
+
+	/*
+	for (int i = 0; i < triangles.size(); ++i) {
+		vectorAddTo(center, triangles[i].v1);
+		vectorAddTo(center, triangles[i].v2);
+		vectorAddTo(center, triangles[i].v3);
+	}
+
+	*/
+	for (auto& tri : triangles) {
+		vectorAddTo(center, tri.v1);
+		vectorAddTo(center, tri.v2);
+		vectorAddTo(center, tri.v3);
+	}
+	
+
+	float count = triangles.size() * 3;
+
+	center.x /= count;
+	center.y /= count;
+	center.z /= count;
+
+	// find farthest point
+	float radius_squared = 0;
+	for (auto& tri : triangles) {
+		V3 line = vectorSub(tri.v1, center);
+		float size1 = line.sizeSquared();
+		line = vectorSub(tri.v2, center);
+		float size2 = line.sizeSquared();
+		line = vectorSub(tri.v3, center);
+		float size3 = line.sizeSquared();
+
+		// sort size1 to be the largest
+		if (size1 < size2) { std::swap(size1, size2); }
+		if (size1 < size3) { std::swap(size1, size3); }
+
+		if (size1 > radius_squared) {
+			radius_squared = size1;
+		}
+
+	}
+
+	float radius = sqrtf(radius_squared);
+
+	for (auto& plane : planes) {
+		// calculate distance from center of bounding sphere to plane
+		float distance = findSignedDistance(center, plane.normal, plane.point);
+
+		// distance < -radius = fully outside
+		if (distance < -radius) {
+			return 1;
+		}
+		// otherwise intersects plane
+		else if (distance < radius) {
+			return 2;
+		}
+	}
+
+	// distance > radius = fully inside
+	return 0;
+}
+
 void Renderer::render() {
 	// clear screen
 	setBackgroundColour();
@@ -759,7 +822,8 @@ void Renderer::render() {
 	// loop through each mesh
 	for (int m = 0; m < Mesh::meshes.size(); ++m) {
 		Mesh* mesh = Mesh::meshes[m]; // get the pointer to the mesh
-		
+	
+		std::vector<Triangle> faces_to_clip;
 		// loop through each face in mesh
 		for (int i = 0; i < mesh->faces.size(); ++i) {
 			// define mesh face vertices
@@ -796,35 +860,58 @@ void Renderer::render() {
 			}
 			// TODO: AFTER THIS IS SLOW
 
-			// clip triangle against near plane
-			std::vector<Triangle> clipped = {}; // clipping may return multiple triangles
-			//clipTriangle(v1, v2, v3, clipped);
-			performFrustumCulling(v1, v2, v3, clipped);
-			
-			// loop through clipped triangles
-			for (int t = 0; t < clipped.size(); ++t) { 
-				// apply lighting
-				Colour colour = Colour(mesh->colours[i]->toInt());
-				bool fill = true;
-				//colour = clipped[t].colour;
-				
-				// only light filled meshes
-				if (fill) {
-					// apply point lighting
-					if (mesh->absorbsLight) {
-						applyLighting(clipped[t].v1, clipped[t].v2, clipped[t].v3, colour);
-					}
-				}
-			
-				// project vertices to 2D
-				V2 pv1 = project(clipped[t].v1);
-				V2 pv2 = project(clipped[t].v2);
-				V2 pv3 = project(clipped[t].v3);
-
-				// render the projected triangle
-				drawTriangle(pv1, pv2, pv3, colour.toInt(), fill); // very slow.
-			}
+			Triangle tri(v1, v2, v3);
+			faces_to_clip.push_back(tri);
 		}
+
+		// clip triangle against near plane
+		std::vector<Triangle> clipped = {}; // clipping may return multiple triangles
+		//clipTriangle(v1, v2, v3, clipped);
+		
+		std::vector<Plane>planes = getPlanes();
+		int res = getVisibleTriangles(faces_to_clip, planes);
+		
+		//res = -1;
+		if (res == 1) {
+			//printf("can ignore\n");
+			continue;
+		}
+		else if (res == 2) {
+			//printf("culled\n");
+			performFrustumCulling(faces_to_clip, planes);
+		}
+		else {
+			//printf("all inside\n");
+		}
+		
+		clipped = faces_to_clip;
+
+		// loop through clipped triangles
+		for (int t = 0; t < clipped.size(); ++t) {
+			// apply lighting
+			//Colour colour = Colour(mesh->colours[i]->toInt());
+			Colour colour = Colour(mesh->colours[0]->toInt());
+			bool fill = true;
+			//colour = clipped[t].colour;
+
+			// only light filled meshes
+			if (fill) {
+				// apply point lighting
+				if (mesh->absorbsLight) {
+					applyLighting(clipped[t].v1, clipped[t].v2, clipped[t].v3, colour);
+				}
+			}
+
+			// project vertices to 2D
+			V2 pv1 = project(clipped[t].v1);
+			V2 pv2 = project(clipped[t].v2);
+			V2 pv3 = project(clipped[t].v3);
+
+			// render the projected triangle
+			drawTriangle(pv1, pv2, pv3, colour.toInt(), fill); // very slow.
+		}
+
+
 	}
 	
 	// draw crosshair
