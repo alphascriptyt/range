@@ -19,12 +19,15 @@
     <ClCompile Include="math\mathutils.cpp" />
     <ClCompile Include="engine\renderer\colour.cpp" />
     <ClCompile Include="engine\renderer\lightsource.cpp" />
-    <ClCompile Include="engine\renderer\triangle.cpp" />
+    <ClCompile Include="engine\renderer\triangle3D.cpp" />
     <ClCompile Include="engine\renderer\mesh.cpp" />
     <ClCompile Include="engine\renderer\presets.cpp" />
     <ClCompile Include="utils\utils.cpp" />
     <ClCompile Include="utils\timer.cpp" />
     <ClCompile Include="math\vectormaths.cpp" />
+    <ClCompile Include="engine\renderer\triangle2D.cpp" />
+    <ClCompile Include="engine\renderer\frustumculling.cpp" />
+    <ClCompile Include="math\plane.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\engine.h" />
@@ -36,11 +39,14 @@
     <ClInclude Include="math\mathutils.h" />
     <ClInclude Include="engine\renderer\colour.h" />
     <ClInclude Include="engine\renderer\lightsource.h" />
-    <ClInclude Include="engine\renderer\triangle.h" />
+    <ClInclude Include="engine\renderer\triangle3D.h" />
     <ClInclude Include="engine\renderer\mesh.h" />
     <ClInclude Include="engine\renderer\presets.h" />
     <ClInclude Include="utils\utils.h" />
     <ClInclude Include="utils\timer.h" />
     <ClInclude Include="math\vectormaths.h" />
+    <ClInclude Include="engine\renderer\triangle2D.h" />
+    <ClInclude Include="engine\renderer\frustumculling.h" />
+    <ClInclude Include="math\plane.h" />
   </ItemGroup>
 </Project>

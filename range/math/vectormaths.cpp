@@ -1,4 +1,5 @@
 #include "vectormaths.h"
+
 #include <cmath>
 
 // vector functions
@@ -52,18 +53,16 @@ V3 vectorCrossProduct(V3& v1, V3& v2) {
 float vectorDotProduct(V3& v1, V3& v2) {
 	return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
-#include <iostream>
-V3 vectorIntersectPlane(V3& v1, V3& v2, V3& plane_normal, V3& plane_point) {
-	// standard algorithm for calculating the intersection between a point and plane
-	float plane_d = -vectorDotProduct(plane_normal, plane_point);
 
-	float ad = vectorDotProduct(v1, plane_normal);
-	float bd = vectorDotProduct(v2, plane_normal);
+V3 vectorIntersectPlane(V3& v1, V3& v2, Plane& plane) {
+	// standard algorithm for calculating the intersection between a point and plane
+	float plane_d = -vectorDotProduct(plane.normal, plane.point);
+
+	float ad = vectorDotProduct(v1, plane.normal);
+	float bd = vectorDotProduct(v2, plane.normal);
 	V3 line_start_to_end = vectorSub(v2, v1);
 
-
-
-	float t = (-plane_d - ad) / vectorDotProduct(line_start_to_end, plane_normal);
+	float t = (-plane_d - ad) / vectorDotProduct(line_start_to_end, plane.normal);
 	
 	V3 line_to_intersect = line_start_to_end;
 	line_to_intersect.x *= t;
@@ -112,4 +111,16 @@ V3 multiplyBy4x1(M4& m, V3& v) {
 	out.w = (m[3][0] * v.x) + (m[3][1] * v.y) + (m[3][2] * v.z) + (m[3][3] * v.w);
 
 	return out;
+}
+
+float findSignedDistance(V3& v, Plane& plane) {
+	// method for finding the signed distance 
+	// between a plane and a vertex
+
+	// find the vector between the plane point and vertex
+	V3 between = vectorSub(v, plane.point);
+
+	// return the signed distance that the between vector goes
+	// in the direction of the plane's normal
+	return vectorDotProduct(plane.normal, between);
 }

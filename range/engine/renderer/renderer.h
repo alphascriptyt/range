@@ -6,20 +6,12 @@
 #include "camera.h"
 #include "mat4d.h"
 #include "mathutils.h"
-#include "triangle.h"
+#include "triangle3D.h"
 #include "lightsource.h"
 #include "colour.h"
+#include "frustumculling.h"
 
 #include <vector>
-
-struct Plane {
-	V3 normal;
-	V3 point;
-	Plane(V3& n, V3& p) {
-		normal = n;
-		point = p;
-	}
-};
 
 // renderer class to wrap SDL_Renderer and my own rendering
 class Renderer {
@@ -33,6 +25,7 @@ private:
 	int32_t bufferLength = 0;			// store the length of the buffer
 
 	M4 projectionMatrix;
+	ViewFrustum viewFrustum;
 
 	// renderer settings - change?
 	int FOV = 90;
@@ -52,13 +45,6 @@ private:
 
 	bool testAndSetDepth(int pos, float z);				// depth testing
 	bool backfaceCull(V3& v1, V3& v2, V3& v3);			// cull backfaces
-
-	std::vector<Plane> getPlanes();
-	int getVisibleTriangles(std::vector<Triangle>& triangles, std::vector<Plane>& planes);
-	void clipTrianglesAgainstPlane(std::vector<Triangle>& triangles, Plane& plane);
-	float findSignedDistance(V3& v, V3& plane_normal, V3& plane_point);			// clipping helper
-	void performFrustumCulling(std::vector<Triangle>& triangles_to_cull, std::vector<Plane>& planes);	// clip triangles
-	void clipTriangle(V3& v1, V3& v2, V3& v3, std::vector<Triangle>& clipped);	// clip triangles
 
 	V2 project(V3& rotated);
 

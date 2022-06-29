@@ -1,6 +1,7 @@
 #pragma once
 #include "mat4D.h"
 #include "vec3D.h"
+#include "plane.h"
 
 // TODO: WRITE COMMENTS
 
@@ -13,5 +14,6 @@ V3 vectorMult(V3& v1, V3& v2);
 void vectorMultBy(V3& v1, V3& v2);
 V3 vectorCrossProduct(V3& v1, V3& v2);
 float vectorDotProduct(V3& v1, V3& v2);
-V3 vectorIntersectPlane(V3& v1, V3& v2, V3& plane_normal, V3& plane_point);
+V3 vectorIntersectPlane(V3& v1, V3& v2, Plane& plane);
 void rotateV3(V3& v, float pitch, float yaw);
+float findSignedDistance(V3& v, Plane& plane);

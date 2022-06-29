@@ -3,7 +3,7 @@
 #include "vec3D.h"
 #include "colour.h"
 
-class Triangle {
+class Triangle3D {
 public:
 	// store triangle vertices
 	V3 v1 = V3(0, 0, 0);
@@ -13,8 +13,8 @@ public:
 	Colour colour = COLOUR::WHITE;
 
 	// constructor to accept vertices as arguments
-	Triangle(V3& _v1, V3& _v2, V3& _v3);
+	Triangle3D(V3& _v1, V3& _v2, V3& _v3);
 
 	// constructor to accept vertices and a colour as arguments
-	Triangle(V3& _v1, V3& _v2, V3& _v3, Colour& _colour);
+	Triangle3D(V3& _v1, V3& _v2, V3& _v3, Colour& _colour);
 };

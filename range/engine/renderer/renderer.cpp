@@ -3,7 +3,8 @@
 #include "renderer.h"
 #include "mat4D.h"
 #include "vectormaths.h"
-#include "triangle.h"
+#include "triangle3D.h"
+#include "triangle2D.h"
 #include "lightsource.h"
 
 #include <cmath>
@@ -12,12 +13,13 @@
 
 // setup
 Renderer::Renderer() {
-
+	viewFrustum = ViewFrustum(nearPlane);
 }
 
 Renderer::Renderer(int w, int h) {
 	WN_WIDTH = w;
 	WN_HEIGHT = h;
+	viewFrustum = ViewFrustum(nearPlane);
 }
 
 void Renderer::createProjectionMatrix() {
@@ -170,11 +172,11 @@ void Renderer::drawRectangle(int x1, int y1, int x2, int y2, int colour) {
 }
 
 void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill) {
-	// calculate dx/dy for each triangle side
+	// calculate dx/dy for each Triangle3D side
 	float m1 = (v2.x - v1.x) / (v2.y - v1.y);
 	float m2 = (v3.x - v1.x) / (v3.y - v1.y);
 
-	// calculate dz/dy for each triangle side
+	// calculate dz/dy for each Triangle3D side
 	float mz1 = (v2.w - v1.w) / (v2.y - v1.y);
 	float mz2 = (v3.w - v1.w) / (v3.y - v1.y);
 
@@ -201,11 +203,11 @@ void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, int colour, bool f
 }
 
 void Renderer::drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill) {
-	// calculate dx/dy for each triangle side
+	// calculate dx/dy for each Triangle3D side
 	float m1 = (v3.x - v1.x) / (v3.y - v1.y);
 	float m2 = (v3.x - v2.x) / (v3.y - v2.y);
 
-	// calculate dz/dy for each triangle side
+	// calculate dz/dy for each Triangle3D side
 	float mz1 = (v3.w - v1.w) / (v3.y - v1.y);
 	float mz2 = (v3.w - v2.w) / (v3.y - v2.y);
 
@@ -236,7 +238,7 @@ void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill) {
 	if (v1.y > v3.y) { std::swap(v1, v3); } // ensure v3 is bigger than v1
 	if (v2.y > v3.y) { std::swap(v2, v3); } // ensure v3 is bigger than v2
 
-	// check if triangle already has a flat top/bottom 
+	// check if Triangle3D already has a flat top/bottom 
 	if (v1.y == v2.y) { drawFlatTopTriangle(v1, v2, v3, colour, fill); return; }
 	if (v2.y == v3.y) { drawFlatBottomTriangle(v1, v2, v3, colour, fill); return; }
 
@@ -249,7 +251,7 @@ void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill) {
 
 	V2 v4(x, v2.y, w);
 	
-	// draw split triangles
+	// draw split Triangle3Ds
 	drawFlatBottomTriangle(v1, v2, v4, colour, fill);
 	drawFlatTopTriangle(v2, v4, v3, colour, fill);
 }
@@ -277,273 +279,11 @@ bool Renderer::backfaceCull(V3& v1, V3& v2, V3& v3) {
 	return false;
 }
 
-float Renderer::findSignedDistance(V3& v, V3& plane_normal, V3& plane_point) {
-	// method for finding the signed distance 
-	// between a plane and a vertex
 
-	// find the vector between the points
-	V3 between = vectorSub(v, plane_point);
 
-	// return the signed distance that the between vector goes
-	// in the direction of the plane's normal
-	return vectorDotProduct(plane_normal, between);
-}
 
-std::vector<Plane> Renderer::getPlanes() {
-	// define origin
-	V3 origin(0, 0, 0);
-	
-	// define the near plane
-	V3 near_normal = V3(0, 0, 1);
-	V3 near_point = V3(0, 0, nearPlane);
-	Plane near(near_normal, near_point);
 
-	// define other planes
-	V3 left_normal(-1, 0, 1);
-	left_normal.normalize();
-	Plane left(left_normal, near_point);
 
-	V3 right_normal(1, 0, 1);
-	right_normal.normalize();
-	Plane right(right_normal, near_point);
-
-	V3 top_normal(0, -1, 1);
-	top_normal.normalize();
-	Plane top(top_normal, near_point);
-
-	V3 bottom_normal(0, 1, 1);
-	bottom_normal.normalize();
-	Plane bottom(bottom_normal, near_point);
-
-	std::vector<Plane> planes;
-	planes.push_back(near);
-	planes.push_back(left); // these two are screwing up
-	planes.push_back(right); // these two are screwing up, everything else works
-	planes.push_back(top);
-	planes.push_back(bottom);
-	
-	return planes;
-}
-
-void Renderer::performFrustumCulling(std::vector<Triangle>& triangles_to_cull, std::vector<Plane>& planes) {
-	//std::vector<Plane> planes = getPlanes();
-
-	std::vector<Triangle> clipped = triangles_to_cull;
-	
-	for (auto& plane : planes) {
-		clipTrianglesAgainstPlane(clipped, plane);
-	}
-	
-	triangles_to_cull = clipped;
-}
-
-void Renderer::clipTrianglesAgainstPlane(std::vector<Triangle>& triangles, Plane& plane) {
-	std::vector<Triangle> clipped;
-
-	for (auto& tri : triangles) {
-		// store the points inside and outside of the near plane
-		int inside_points_count = 0;
-		int outside_points_count = 0;
-		V3 inside_points[3];
-		V3 outside_points[3];
-
-		// calculate the distance away from the near plane
-		float d1 = findSignedDistance(tri.v1, plane.normal, plane.point);
-		float d2 = findSignedDistance(tri.v2, plane.normal, plane.point);
-		float d3 = findSignedDistance(tri.v3, plane.normal, plane.point);
-
-		bool in_first = false;
-		bool in_second = false;
-
-		// determine which points are inside or outside of the plane
-		if (d1 >= 0) {
-			inside_points[inside_points_count] = tri.v1;
-			inside_points_count++;
-			in_first = true;
-		}
-		else {
-			outside_points[outside_points_count] = tri.v1;
-			outside_points_count++;
-		}
-		if (d2 >= 0) {
-			inside_points[inside_points_count] = tri.v2;
-			inside_points_count++;
-			in_second = true;
-		}
-		else {
-			outside_points[outside_points_count] = tri.v2;
-			outside_points_count++;
-		}
-		if (d3 >= 0) {
-			inside_points[inside_points_count] = tri.v3;
-			inside_points_count++;
-		}
-		else {
-			outside_points[outside_points_count] = tri.v3;
-			outside_points_count++;
-		}
-
-		// clip vertices
-		if (inside_points_count == 3) {
-			// if all points are inside of the plane we can just
-			// return the original triangle
-			//Triangle tri = Triangle(tri.v1, tri.v2, tri.v3);
-			clipped.push_back(tri);
-		}
-		else if (inside_points_count == 1 && outside_points_count == 2) {
-			// if only one vertex is inside the triangle
-			// a new triangle will be formed using the plane edge
-
-			V3 nv1 = vectorIntersectPlane(inside_points[0], outside_points[0], plane.normal, plane.point);
-			V3 nv2 = vectorIntersectPlane(inside_points[0], outside_points[1], plane.normal, plane.point);
-
-			if (in_first) {
-				Triangle tri = Triangle(inside_points[0], nv1, nv2);
-				tri.colour = COLOUR::RED;
-				clipped.push_back(tri);
-			}
-			else {
-				if (in_second) {
-					Triangle tri = Triangle(nv1, inside_points[0], nv2);
-					tri.colour = COLOUR::RED;
-					clipped.push_back(tri);
-				}
-				else {
-					Triangle tri = Triangle(nv1, nv2, inside_points[0]);
-					tri.colour = COLOUR::RED;
-					clipped.push_back(tri);
-				}
-			}
-		}
-
-		else if (inside_points_count == 2 && outside_points_count == 1) {
-			// if only two vertices are inside the plane
-			// a quad will be formed and therefore two
-			// new triangles will be formed
-			V3 nv1 = vectorIntersectPlane(inside_points[0], outside_points[0], plane.normal, plane.point);
-			V3 nv2 = vectorIntersectPlane(inside_points[1], outside_points[0], plane.normal, plane.point);
-
-			if (in_first) {
-				if (in_second) {
-					Triangle tri1 = Triangle(inside_points[0], inside_points[1], nv1);
-					tri1.colour = COLOUR::GREEN;
-					clipped.push_back(tri1);
-
-					Triangle tri2 = Triangle(nv1, inside_points[1], nv2);
-					tri2.colour = COLOUR::GOLD;
-					clipped.push_back(tri2);
-				}
-				else {
-					Triangle tri1 = Triangle(inside_points[0], nv1, inside_points[1]);
-					tri1.colour = COLOUR::GREEN;
-					clipped.push_back(tri1);
-
-					Triangle tri2 = Triangle(nv1, nv2, inside_points[1]);
-					tri2.colour = COLOUR::GOLD;
-					clipped.push_back(tri2);
-				}
-
-			}
-			else {
-				Triangle tri1 = Triangle(nv1, inside_points[0], inside_points[1]);
-				tri1.colour = COLOUR::GREEN;
-				clipped.push_back(tri1);
-
-				Triangle tri2 = Triangle(nv1, inside_points[1], nv2);
-				tri2.colour = COLOUR::GOLD;
-				clipped.push_back(tri2);
-			}
-			
-		}
-	}
-
-	triangles = clipped;
-}
-
-void Renderer::clipTriangle(V3& v1, V3& v2, V3& v3, std::vector<Triangle>& clipped) {
-	// only clip the triangle to the near plane as its the only necessary one
-
-	// define the near plane
-	V3 near_plane_point = V3(0, 0, nearPlane);
-	V3 near_plane_normal = V3(0, 0, 1);
-
-	// store the points inside and outside of the near plane
-	int inside_points_count = 0;
-	int outside_points_count = 0;
-	V3 inside_points[3];
-	V3 outside_points[3];
-
-	// calculate the distance away from the near plane
-	float d1 = findSignedDistance(v1, near_plane_normal, near_plane_point);
-	float d2 = findSignedDistance(v2, near_plane_normal, near_plane_point);
-	float d3 = findSignedDistance(v3, near_plane_normal, near_plane_point);
-
-	// determine which points are inside or outside of the plane
-	if (d1 >= 0) {
-		inside_points[inside_points_count] = v1;
-		inside_points_count++;
-	}
-	else {
-		outside_points[outside_points_count] = v1;
-		outside_points_count++;
-	}
-	if (d2 >= 0) {
-		inside_points[inside_points_count] = v2;
-		inside_points_count++;
-	}
-	else {
-		outside_points[outside_points_count] = v2;
-		outside_points_count++;
-	}
-	if (d3 >= 0) {
-		inside_points[inside_points_count] = v3;
-		inside_points_count++;
-	}
-	else {
-		outside_points[outside_points_count] = v3;
-		outside_points_count++;
-	}
-
-	// clip vertices
-	if (inside_points_count == 0) {
-		// if all points are outside of the plane we ignore triangle
-		return;
-	}
-	if (inside_points_count == 3) {
-		// if all points are inside of the plane we can just
-		// return the original triangle
-		//Triangle* tri = new Triangle(v1, v2, v3);
-		Triangle tri = Triangle(v1, v2, v3);
-		clipped.push_back(tri);
-		return;
-	}
-	if (inside_points_count == 1 && outside_points_count == 2) {
-		// if only one vertex is inside the triangle
-		// a new triangle will be formed using the plane edge
-
-		V3 nv1 = vectorIntersectPlane(inside_points[0], outside_points[0], near_plane_normal, near_plane_point);
-		V3 nv2 = vectorIntersectPlane(inside_points[0], outside_points[1], near_plane_normal, near_plane_point);
-
-		Triangle tri = Triangle(inside_points[0], nv1, nv2);
-		clipped.push_back(tri);
-		return;
-	}
-
-	if (inside_points_count == 2 && outside_points_count == 1) {
-		// if only two vertices are inside the plane
-		// a quad will be formed and therefore two
-		// new triangles will be formed
-		V3 nv1 = vectorIntersectPlane(inside_points[0], outside_points[0], near_plane_normal, near_plane_point);
-		Triangle tri1 = Triangle(inside_points[0], inside_points[1], nv1);
-		clipped.push_back(tri1);
-
-		V3 nv2 = vectorIntersectPlane(inside_points[1], outside_points[0], near_plane_normal, near_plane_point);
-		Triangle tri2 = Triangle(inside_points[1], nv1, nv2);
-		clipped.push_back(tri2);
-
-		return;
-	}
-}
 
 V2 Renderer::project(V3& rotated) {
 	// convert a 4D matrix to 2D pixel coordinates
@@ -711,7 +451,7 @@ float Renderer::applyPointLighting(V3& v1, V3& v2, V3& v3, LightSource& light) {
 	return 0.0f;
 }
 
-// TODO: SHADE IN TRIANGLE, LERP VERTEX COLOURS
+// TODO: SHADE IN Triangle3D, LERP VERTEX COLOURS
 
 void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 	// little hack for viewpoint lighting, set the first
@@ -747,90 +487,32 @@ void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 	base_colour = face_colour;
 } 
 
-int Renderer::getVisibleTriangles(std::vector<Triangle>& triangles, std::vector<Plane>& planes) {
-	V3 center;
 
-	/*
-	for (int i = 0; i < triangles.size(); ++i) {
-		vectorAddTo(center, triangles[i].v1);
-		vectorAddTo(center, triangles[i].v2);
-		vectorAddTo(center, triangles[i].v3);
-	}
-
-	*/
-	for (auto& tri : triangles) {
-		vectorAddTo(center, tri.v1);
-		vectorAddTo(center, tri.v2);
-		vectorAddTo(center, tri.v3);
-	}
-	
-
-	float count = triangles.size() * 3;
-
-	center.x /= count;
-	center.y /= count;
-	center.z /= count;
-
-	// find farthest point
-	float radius_squared = 0;
-	for (auto& tri : triangles) {
-		V3 line = vectorSub(tri.v1, center);
-		float size1 = line.sizeSquared();
-		line = vectorSub(tri.v2, center);
-		float size2 = line.sizeSquared();
-		line = vectorSub(tri.v3, center);
-		float size3 = line.sizeSquared();
-
-		// sort size1 to be the largest
-		if (size1 < size2) { std::swap(size1, size2); }
-		if (size1 < size3) { std::swap(size1, size3); }
-
-		if (size1 > radius_squared) {
-			radius_squared = size1;
-		}
-
-	}
-
-	float radius = sqrtf(radius_squared);
-
-	for (auto& plane : planes) {
-		// calculate distance from center of bounding sphere to plane
-		float distance = findSignedDistance(center, plane.normal, plane.point);
-
-		// distance < -radius = fully outside
-		if (distance < -radius) {
-			return 1;
-		}
-		// otherwise intersects plane
-		else if (distance < radius) {
-			return 2;
-		}
-	}
-
-	// distance > radius = fully inside
-	return 0;
-}
 
 void Renderer::render() {
 	// clear screen
 	setBackgroundColour();
 
 	// initialize depth buffer with z-far (maximum z distance)
-	std::fill(depthBuffer.begin(), depthBuffer.end(), farPlane);
+	std::fill(depthBuffer.begin(), depthBuffer.end(), farPlane); // TODO: is farPlane working right?
 	
 	// actually render the scene
 	// loop through each mesh
 	for (int m = 0; m < Mesh::meshes.size(); ++m) {
 		Mesh* mesh = Mesh::meshes[m]; // get the pointer to the mesh
 	
-		std::vector<Triangle> faces_to_clip;
+		// store all of the mesh triangles
+		std::vector<Triangle3D> triangles;
+
 		// loop through each face in mesh
 		for (int i = 0; i < mesh->faces.size(); ++i) {
-			// define mesh face vertices
+			// get mesh face vertices
 			V3 v1(mesh->vertices[mesh->faces[i][0]][0], mesh->vertices[mesh->faces[i][0]][1], mesh->vertices[mesh->faces[i][0]][2]);
 			V3 v2(mesh->vertices[mesh->faces[i][1]][0], mesh->vertices[mesh->faces[i][1]][1], mesh->vertices[mesh->faces[i][1]][2]);
 			V3 v3(mesh->vertices[mesh->faces[i][2]][0], mesh->vertices[mesh->faces[i][2]][1], mesh->vertices[mesh->faces[i][2]][2]);
 			
+			// convert from World Space -> Camera Space
+
 			// scale vertices to mesh size
 			vectorMultBy(v1, mesh->size);
 			vectorMultBy(v2, mesh->size);
@@ -855,63 +537,51 @@ void Renderer::render() {
 			rotateV3(v3, camera.pitch, camera.yaw);
 
 			// cull backfaces
-			if (!backfaceCull(v1, v2, v3)) {
-				continue; // skip face if on the back of a mesh
+			if (backfaceCull(v1, v2, v3)) {
+				// if the triangle is facing the camera, add it to the draw queue
+				triangles.push_back(Triangle3D(v1, v2, v3));
 			}
-			// TODO: AFTER THIS IS SLOW
-
-			Triangle tri(v1, v2, v3);
-			faces_to_clip.push_back(tri);
 		}
 
-		// clip triangle against near plane
-		std::vector<Triangle> clipped = {}; // clipping may return multiple triangles
-		//clipTriangle(v1, v2, v3, clipped);
+		// frustum culling
 		
-		std::vector<Plane>planes = getPlanes();
-		int res = getVisibleTriangles(faces_to_clip, planes);
+		// determine if the mesh is fully inside the frustum
+		int state = viewFrustum.isMeshVisible(triangles); // 0 = fully inside, 1 = fully outside, 2 = mesh intersects plane 
 		
-		//res = -1;
-		if (res == 1) {
-			//printf("can ignore\n");
+		if (state == 1) {
+			// whole mesh is outside of the viewing frustum
 			continue;
 		}
-		else if (res == 2) {
-			//printf("culled\n");
-			performFrustumCulling(faces_to_clip, planes);
+		else if (state == 2) {
+			// mesh is partly outside of the viewing frustum so cull
+			viewFrustum.clipTriangles(triangles);
 		}
-		else {
-			//printf("all inside\n");
-		}
-		
-		clipped = faces_to_clip;
 
 		// loop through clipped triangles
-		for (int t = 0; t < clipped.size(); ++t) {
-			// apply lighting
+		for (int t = 0; t < triangles.size(); ++t) {
+			// lighting
+			
 			//Colour colour = Colour(mesh->colours[i]->toInt());
 			Colour colour = Colour(mesh->colours[0]->toInt());
-			bool fill = true;
 			//colour = clipped[t].colour;
 
-			// only light filled meshes
-			if (fill) {
+			bool fill = true;
+			
+			// only apply lighting to filled meshes
+			if (fill && mesh->absorbsLight) {
 				// apply point lighting
-				if (mesh->absorbsLight) {
-					applyLighting(clipped[t].v1, clipped[t].v2, clipped[t].v3, colour);
-				}
+				applyLighting(triangles[t].v1, triangles[t].v2, triangles[t].v3, colour);
 			}
 
-			// project vertices to 2D
-			V2 pv1 = project(clipped[t].v1);
-			V2 pv2 = project(clipped[t].v2);
-			V2 pv3 = project(clipped[t].v3);
+			// project vertices to 2D - Camera Space -> Screen Space
+			V2 pv1 = project(triangles[t].v1);
+			V2 pv2 = project(triangles[t].v2);
+			V2 pv3 = project(triangles[t].v3);
 
-			// render the projected triangle
-			drawTriangle(pv1, pv2, pv3, colour.toInt(), fill); // very slow.
+			// this is painfully slow.
+			// clipping 2d triangles shouldn't be the solution as this would create more triangles to draw.
+			drawTriangle(pv1, pv2, pv3, colour.toInt(), fill); // very slow.			
 		}
-
-
 	}
 	
 	// draw crosshair
