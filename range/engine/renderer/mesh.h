@@ -8,12 +8,9 @@
 #include "lightsource.h"
 
 class Mesh {
-public:
-	// globally keep track of all meshes in the scene
-	static std::vector<Mesh*> meshes;	// TODO: maybe do this differently due to cache misses?
-										
+public:										
 	// mesh shape properties
-	std::vector<std::vector<float>> vertices = {};
+	std::vector<V3> vertices = {};
 	std::vector<std::vector<int>> faces = {};
 	std::vector<Colour*> colours = {};
 
@@ -28,10 +25,10 @@ public:
 	std::string path = ""; // stores the path if the mesh was made from one
 
 	// constructor taking a reference to the vertices, faces and position of the mesh
-	Mesh(std::vector<std::vector<float>>& v, std::vector<std::vector<int>>& f, V3& p, Colour colour = COLOUR::WHITE);
+	Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, V3& p, Colour colour = COLOUR::WHITE);
 
 	// constructor taking a reference to the vertices, faces, position and size of the mesh
-	Mesh(std::vector<std::vector<float>>& v, std::vector<std::vector<int>>& f, V3& p, V3& s, Colour colour = COLOUR::WHITE);
+	Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, V3& p, V3& s, Colour colour = COLOUR::WHITE);
 
 	// constructor taking a filename and a reference to the position of the mesh
 	Mesh(std::string filename, V3& p, Colour colour = COLOUR::WHITE);

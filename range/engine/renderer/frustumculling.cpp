@@ -178,35 +178,22 @@ void ViewFrustum::clipTriangles(std::vector<Triangle3D>& triangles) {
 int ViewFrustum::isMeshVisible(std::vector<Triangle3D>& triangles) {
 	V3 center;
 
-	/*
-	for (int i = 0; i < Triangle3Ds.size(); ++i) {
-		vectorAddTo(center, Triangle3Ds[i].v1);
-		vectorAddTo(center, Triangle3Ds[i].v2);
-		vectorAddTo(center, Triangle3Ds[i].v3);
-	}
-
-	*/
 	for (auto& tri : triangles) {
-		vectorAddTo(center, tri.v1);
-		vectorAddTo(center, tri.v2);
-		vectorAddTo(center, tri.v3);
+		center += tri.v1 + tri.v2 + tri.v3;
 	}
-
 
 	float count = triangles.size() * 3;
 
-	center.x /= count;
-	center.y /= count;
-	center.z /= count;
+	center /= count;
 
 	// find farthest point
 	float radius_squared = 0;
 	for (auto& tri : triangles) {
-		V3 line = vectorSub(tri.v1, center);
+		V3 line = tri.v1 - center;
 		float size1 = line.sizeSquared();
-		line = vectorSub(tri.v2, center);
+		line = tri.v2 - center;
 		float size2 = line.sizeSquared();
-		line = vectorSub(tri.v3, center);
+		line = tri.v3 - center;
 		float size3 = line.sizeSquared();
 
 		// sort size1 to be the largest

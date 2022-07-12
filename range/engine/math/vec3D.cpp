@@ -44,3 +44,4 @@ void V3::makePositive() {
 void V3::print() {
 	std::cout << x << " " << y << " " << z << " " << w << std::endl;
 }
+

@@ -5,8 +5,8 @@
 
 #include "engine.h"
 #include "renderer/mesh.h"
-#include "utils.h"
 #include "renderer/presets.h"
+#include "utils.h"
 #include "timer.h"
 
 Engine::Engine() {
@@ -15,11 +15,15 @@ Engine::Engine() {
 bool Engine::setup(int w, int h) {
 	// create the renderer
 	renderer = Renderer(w, h);
-
+	renderer.camera = &camera;
+	
 	// try intialize the renderer
 	if (!renderer.init()) {
 		return false;
 	}
+
+	// setup the 
+	physics.camera = &camera;
 
 	// force the mouse inside of the window
 	SDL_SetRelativeMouseMode(SDL_TRUE);
@@ -30,7 +34,7 @@ bool Engine::setup(int w, int h) {
 
 bool Engine::loadScene(std::string filename) {
 	// start by clearing the current scene
-	Mesh::meshes = {};
+	//Mesh::meshes = {};
 
 	// clear all lightsources except the viewpoint
 	LightSource::sources.erase(LightSource::sources.begin() + 1, LightSource::sources.end());
@@ -90,19 +94,19 @@ void Engine::handleEvents(float& dt) {
 
 	// handle current events
 	while (SDL_PollEvent(&ev)) {
-		// handle the current event type
+		// handle the current event
 		switch (ev.type) {
 
-		// exit gameloop on quit
+		// exit gameloop when exit button is clicked
 		case (SDL_QUIT):
 			active = false;
 			return;
 		
-			// handle keypresses
+		// handle keypresses
 		case (SDL_KEYDOWN):
-			// close window on escape
 			switch (ev.key.keysym.sym) {
 			case (SDLK_ESCAPE):
+				// exit gameloop when escape is pressed
 				active = false;
 				break;
 
@@ -116,15 +120,10 @@ void Engine::handleEvents(float& dt) {
 					handlingInput = true;
 				}
 				break;
-
-			case (SDLK_0):
-				renderer.camera.position.print();
-				break;
 			}
-
 			break;
 
-			// handle mouse movement
+		// handle mouse movement
 		case (SDL_MOUSEMOTION):
 			// only process mousemotion if camera if handlingInput
 			if (!handlingInput) { break; }
@@ -137,13 +136,13 @@ void Engine::handleEvents(float& dt) {
 			float y = toRadians((float)ev.motion.xrel * sensitivity);
 
 			// normalize and set the changes in viewangles
-			renderer.camera.updateViewAngles(y, p);
+			renderer.camera->updateViewAngles(y, p);
 
 			// calculate the camera's looking direction
-			renderer.camera.direction.x = std::sin(renderer.camera.yaw);
-			renderer.camera.direction.y = -std::sin(renderer.camera.pitch);
-			renderer.camera.direction.z = std::cos(renderer.camera.yaw);
-			renderer.camera.direction.normalize();
+			renderer.camera->direction.x = std::sin(renderer.camera->yaw);
+			renderer.camera->direction.y = -std::sin(renderer.camera->pitch);
+			renderer.camera->direction.z = std::cos(renderer.camera->yaw);
+			renderer.camera->direction.normalize();
 
 			break;
 		}
@@ -152,7 +151,7 @@ void Engine::handleEvents(float& dt) {
 	// move camera
 	if (handlingInput) {
 		const Uint8* keys = SDL_GetKeyboardState(NULL);
-		renderer.camera.move(keys, dt);
+		renderer.camera->move(keys, dt);
 	}
 }
 
@@ -174,6 +173,8 @@ void Engine::loop() {
 	// initialize timing/profiling values
 	Uint64 start_perf = 0;
 
+	Timer frame_timer;
+
 	int fps = 0;
 	float dt = 0;
 
@@ -191,18 +192,38 @@ void Engine::loop() {
 		// calculate delta time for time based movement		
 		dt = getDeltaTime(current_ticks, last_ticks);
 
+		// perform physics
+		// TODO: setup.
+		// physics need to interact with meshes/renderer/camera somehow etc? 
+		// https://www.youtube.com/watch?v=-_IspRG548E
+		physics.process(dt);
+
 		// render scene
-		renderer.render();
+		renderer.renderScene(Scene::scenes[0]);
+		
+		// every 100 frames, display the fps
+		if (frame_timer.elapsed() > 200) {
+			// calculate performance
+			fps = getCurrentFPS(start_perf); // calculate delta time and fps
 
-		// calculate performance
-		fps = getCurrentFPS(start_perf); // calculate delta time and fps
+			// TEMP: display the FPS
+			//SDL_SetWindowTitle(renderer.window, std::to_string(fps).c_str());
 
-		// TEMP: display the FPS
-		SDL_SetWindowTitle(renderer.window, std::to_string(fps).c_str());
+			// reset the timer
+			frame_timer.reset();
+		}
+
+		renderer.renderText((char*)std::to_string(fps).c_str(), COLOUR::RED, 50, 50);
+
+		// render the buffer to the screen
+		SDL_UpdateWindowSurface(renderer.window);
 	}
 }
 
 void Engine::exit() {
+	// cleanup the renderer
+	renderer.cleanup();
+
 	// release SDL resources
 	SDL_Quit();
 }

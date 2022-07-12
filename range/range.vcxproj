@@ -71,13 +71,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)\range\math\;$(SolutionDir)\range\engine\libs\SDL2\SDL2-devel-2.0.14-VC\SDL2-2.0.14\include;$(SolutionDir)\range\engine\libs\SDL2\SDL2_image-2.0.5\include;$(SolutionDir)\range\;$(SolutionDir)\range\utils;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)\range\engine\libs\SDL2;$(SolutionDir)\range\engine\libs\SDL2\SDL2-devel-2.0.14-VC\SDL2-2.0.14\lib\x64;$(SolutionDir)\range\engine\libs\SDL2\SDL2_image-2.0.5\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)\range\engine\libs\SDL2\SDL2_ttf-2.0.18\include;$(SolutionDir)\range\engine\math\;$(SolutionDir)\range\engine\libs\SDL2\SDL2-devel-2.0.14-VC\SDL2-2.0.14\include;$(SolutionDir)\range\engine\libs\SDL2\SDL2_image-2.0.5\include;$(SolutionDir)\range\;$(SolutionDir)\range\engine\utils;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\range\engine\libs\SDL2\SDL2_ttf-2.0.18\lib\x64;$(SolutionDir)\range\engine\libs\SDL2;$(SolutionDir)\range\engine\libs\SDL2\SDL2-devel-2.0.14-VC\SDL2-2.0.14\lib\x64;$(SolutionDir)\range\engine\libs\SDL2\SDL2_image-2.0.5\lib\x64;$(LibraryPath)</LibraryPath>
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)\range\engine\libs\SDL2\SDL2_image-2.0.5\include;$(SolutionDir)\range\engine\libs\SDL2\SDL2-devel-2.0.14-VC\SDL2-2.0.14\include;$(SolutionDir)\range\utils;$(SolutionDir)\range\;$(SolutionDir)\range\math\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)\range\engine\libs\SDL2\SDL2_image-2.0.5\lib\x64;$(SolutionDir)\range\engine\libs\SDL2\SDL2-devel-2.0.14-VC\SDL2-2.0.14\lib\x64;$(SolutionDir)\range\engine\libs\SDL2;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)\range\engine\libs\SDL2\SDL2_ttf-2.0.18\include;$(SolutionDir)\range\engine\libs\SDL2\SDL2_image-2.0.5\include;$(SolutionDir)\range\engine\libs\SDL2\SDL2-devel-2.0.14-VC\SDL2-2.0.14\include;$(SolutionDir)\range\engine\utils;$(SolutionDir)\range\;$(SolutionDir)\range\engine\math\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\range\engine\libs\SDL2\SDL2_ttf-2.0.18\lib\x64;$(SolutionDir)\range\engine\libs\SDL2\SDL2_image-2.0.5\lib\x64;$(SolutionDir)\range\engine\libs\SDL2\SDL2-devel-2.0.14-VC\SDL2-2.0.14\lib\x64;$(SolutionDir)\range\engine\libs\SDL2;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -117,7 +117,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -134,10 +134,13 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\physics\AABB.cpp" />
+    <ClCompile Include="engine\physics\collision.cpp" />
+    <ClCompile Include="engine\physics\physics.cpp" />
     <ClCompile Include="engine\renderer\camera.cpp" />
     <ClCompile Include="engine\engine.cpp" />
     <ClCompile Include="engine\renderer\colour.cpp" />
@@ -148,17 +151,23 @@
     <ClCompile Include="engine\renderer\renderer.cpp" />
     <ClCompile Include="engine\renderer\triangle2D.cpp" />
     <ClCompile Include="engine\renderer\triangle3D.cpp" />
-    <ClCompile Include="math\mat4D.cpp" />
-    <ClCompile Include="math\mathutils.cpp" />
-    <ClCompile Include="math\plane.cpp" />
-    <ClCompile Include="math\vec2D.cpp" />
-    <ClCompile Include="math\vec3D.cpp" />
-    <ClCompile Include="math\vectormaths.cpp" />
-    <ClCompile Include="range.cpp" />
-    <ClCompile Include="utils\timer.cpp" />
-    <ClCompile Include="utils\utils.cpp" />
+    <ClCompile Include="engine\scene.cpp" />
+    <ClCompile Include="engine\sceneobject.cpp" />
+    <ClCompile Include="game\game.cpp" />
+    <ClCompile Include="engine\math\mat4D.cpp" />
+    <ClCompile Include="engine\math\mathutils.cpp" />
+    <ClCompile Include="engine\math\plane.cpp" />
+    <ClCompile Include="engine\math\vec2D.cpp" />
+    <ClCompile Include="engine\math\vec3D.cpp" />
+    <ClCompile Include="engine\math\vectormaths.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="engine\utils\timer.cpp" />
+    <ClCompile Include="engine\utils\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\physics\AABB.h" />
+    <ClInclude Include="engine\physics\collision.h" />
+    <ClInclude Include="engine\physics\physics.h" />
     <ClInclude Include="engine\renderer\camera.h" />
     <ClInclude Include="engine\engine.h" />
     <ClInclude Include="engine\renderer\colour.h" />
@@ -169,14 +178,17 @@
     <ClInclude Include="engine\renderer\renderer.h" />
     <ClInclude Include="engine\renderer\triangle2D.h" />
     <ClInclude Include="engine\renderer\triangle3D.h" />
-    <ClInclude Include="math\mat4D.h" />
-    <ClInclude Include="math\mathutils.h" />
-    <ClInclude Include="math\plane.h" />
-    <ClInclude Include="math\vec2D.h" />
-    <ClInclude Include="math\vec3D.h" />
-    <ClInclude Include="math\vectormaths.h" />
-    <ClInclude Include="utils\timer.h" />
-    <ClInclude Include="utils\utils.h" />
+    <ClInclude Include="engine\scene.h" />
+    <ClInclude Include="engine\sceneobject.h" />
+    <ClInclude Include="game\game.h" />
+    <ClInclude Include="engine\math\mat4D.h" />
+    <ClInclude Include="engine\math\mathutils.h" />
+    <ClInclude Include="engine\math\plane.h" />
+    <ClInclude Include="engine\math\vec2D.h" />
+    <ClInclude Include="engine\math\vec3D.h" />
+    <ClInclude Include="engine\math\vectormaths.h" />
+    <ClInclude Include="engine\utils\timer.h" />
+    <ClInclude Include="engine\utils\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

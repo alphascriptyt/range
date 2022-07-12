@@ -8,23 +8,17 @@
 #include <fstream>
 #include <iostream>
 
-// initialize static member container of pointers to meshes
-std::vector<Mesh*> Mesh::meshes = {}; 
-
 // constructors
-Mesh::Mesh(std::vector<std::vector<float>>& v, std::vector<std::vector<int>>& f, V3& p, Colour colour) {
+Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, V3& p, Colour colour) {
 	vertices = v;
 	faces = f;
 	pos = p;
 
 	// set the mesh colour
 	fillColour(colour);
-
-	// add mesh to meshes container
-	Mesh::meshes.push_back(this);
 }
 
-Mesh::Mesh(std::vector<std::vector<float>>& v, std::vector<std::vector<int>>& f, V3& p, V3& s, Colour colour) {
+Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, V3& p, V3& s, Colour colour) {
 	vertices = v;
 	faces = f;
 	pos = p;
@@ -32,9 +26,6 @@ Mesh::Mesh(std::vector<std::vector<float>>& v, std::vector<std::vector<int>>& f,
 
 	// set the mesh colour
 	fillColour(colour);
-
-	// add mesh to meshes container
-	Mesh::meshes.push_back(this);
 }
 
 Mesh::Mesh(std::string filename, V3& p, Colour colour) {
@@ -45,9 +36,6 @@ Mesh::Mesh(std::string filename, V3& p, Colour colour) {
 	if (loadFromObjFile(filename)) {
 		// set the mesh colour
 		fillColour(colour);
-
-		// add mesh to meshes container
-		Mesh::meshes.push_back(this);
 	}
 }
 
@@ -60,9 +48,6 @@ Mesh::Mesh(std::string filename, V3& p, V3& s, Colour colour) {
 	if (loadFromObjFile(filename)) {
 		// set the mesh colour
 		fillColour(colour);
-
-		// add mesh to meshes container
-		Mesh::meshes.push_back(this);
 	}
 }
 
@@ -131,8 +116,6 @@ void Mesh::makeLightSource(LightSource* light) {
 	fillColour(light->colour);
 	pos = light->position;
 }
-
-
 
 void Mesh::move(const Uint8* keys, float dt, float camera_yaw) {
 	// moving forwards

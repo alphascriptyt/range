@@ -4,7 +4,6 @@
 #include "mat4D.h"
 #include "vectormaths.h"
 #include "triangle3D.h"
-#include "triangle2D.h"
 #include "lightsource.h"
 
 #include <cmath>
@@ -23,7 +22,7 @@ Renderer::Renderer(int w, int h) {
 }
 
 void Renderer::createProjectionMatrix() {
-	// create the projection matrix once at the start as it shouldn't change
+	// pre calculate the projection matrix once at the start as it shouldn't change
 	float aspect_ratio = WN_WIDTH / (float)WN_HEIGHT;
 
 	projectionMatrix.setRow(0, 1 / halfTanFOV, 0, 0, 0);
@@ -40,27 +39,42 @@ bool Renderer::init() {
 		printf("Failed to create window - %s\n", SDL_GetError());
 		return false;
 	}
-	
+
+	// initialize SDL_ttf
+	if (TTF_Init() == -1) {
+		printf("Failed to initialize SDL_ttf - %s\n", TTF_GetError());
+		return false;
+	}
+
+	// TEMP: load the global font
+	font = TTF_OpenFont("C:/Users/olive/source/repos/range/range/engine/res/font/louisgeorgecafe_base.ttf", 28);
+
+	if (!font) {
+		printf("Failed to open font - %s\n", TTF_GetError());
+		return false;
+	}
+
 	// check for failures creating the buffer
 	if (!initBuffers()) {
 		return false;
 	}
 	
 	// create the viewpoint lightsource (has to be created first so we can access it easily)
-	LightSource* viewpoint = new LightSource(camera.position, COLOUR::WHITE, 10); // create on heap so GC doesn't delete it
+	LightSource* viewpoint = new LightSource(camera->position, COLOUR::WHITE, 10); // create on heap so GC doesn't delete it
 
 	return true;
 }
+
 bool Renderer::initBuffers() {
 	// try get a pointer to the SDL window surface
 	windowSurface = SDL_GetWindowSurface(window);
-
+	
 	// check for errors
 	if (!windowSurface) {
 		printf("Failed to GetWindowSurface: %s\n", SDL_GetError());
 		return false;
 	}
-
+	
 	// get access to the pixel buffer 
 	pixelBuffer = (uint32_t*)windowSurface->pixels;
 
@@ -256,20 +270,36 @@ void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill) {
 	drawFlatTopTriangle(v2, v4, v3, colour, fill);
 }
 
-// 3D methods
+// text rendering
+void Renderer::renderText(char* text, Colour& colour, int x, int y) {
+	// create a surface from the text
+	SDL_Surface* text_surface = TTF_RenderText_Solid(font, text, colour.toSDL());
+
+	// set the text surface rect position
+	text_surface->clip_rect.x = x;
+	text_surface->clip_rect.y = y;
+
+	// blit the text surface to the window surface
+	SDL_BlitSurface(text_surface, NULL, windowSurface, &text_surface->clip_rect);
+	
+	// free the surface
+	if (text_surface) { SDL_FreeSurface(text_surface); }
+}
+
+// rendering methods
 void Renderer::viewTransform(V3& v) {
 	// translate scene with respect to camera
-	v.x -= camera.position.x;
-	v.y -= camera.position.y;
-	v.z -= camera.position.z;
+	v.x -= camera->position.x;
+	v.y -= camera->position.y;
+	v.z -= camera->position.z;
 }
 
 bool Renderer::backfaceCull(V3& v1, V3& v2, V3& v3) {
 	// algorithm to check whether a face should be drawn
 	// or if it is on the backside of the shape and therefore
 	// cannot be seen
-	V3 vs1 = vectorSub(v2, v1);
-	V3 vs2 = vectorSub(v3, v1);
+	V3 vs1 = v2 - v1;
+	V3 vs2 = v3 - v1;
 	V3 n = vectorCrossProduct(vs1, vs2);
 
 	if (vectorDotProduct(v1, n) <= 0) {
@@ -278,12 +308,6 @@ bool Renderer::backfaceCull(V3& v1, V3& v2, V3& v3) {
 
 	return false;
 }
-
-
-
-
-
-
 
 V2 Renderer::project(V3& rotated) {
 	// convert a 4D matrix to 2D pixel coordinates
@@ -317,16 +341,15 @@ V2 Renderer::project(V3& rotated) {
 	return pixel_coords;
 }
 
-// rendering functions
 void Renderer::setBackgroundColour(int colour) {
 	std::fill(pixelBuffer, pixelBuffer + bufferLength, colour);
 }
 
 void Renderer::rotateMeshFace(V3& v1, V3& v2, V3& v3, V3& pos, float pitch, float yaw) {
 	// translate vertices to origin for rotation
-	V3 tv1 = vectorSub(v1, pos);
-	V3 tv2 = vectorSub(v2, pos);
-	V3 tv3 = vectorSub(v3, pos);
+	V3 tv1 = v1 - pos;
+	V3 tv2 = v2 - pos;
+	V3 tv3 = v3 - pos;
 
 	// rotate vertices
 	rotateV3(tv1, pitch, yaw);
@@ -334,9 +357,9 @@ void Renderer::rotateMeshFace(V3& v1, V3& v2, V3& v3, V3& pos, float pitch, floa
 	rotateV3(tv3, pitch, yaw);
 
 	// translate vertices back to original position
-	v1 = vectorAdd(pos, tv1);
-	v2 = vectorAdd(pos, tv2);
-	v3 = vectorAdd(pos, tv3);
+	v1 = pos + tv1;
+	v2 = pos + tv2;
+	v3 = pos + tv3;
 }
 
 void Renderer::drawLine3D(V3& v1, V3& direction, float length) {
@@ -347,7 +370,7 @@ void Renderer::drawLine3D(V3& v1, V3& direction, float length) {
 	gap.y *= length;
 	gap.z *= length;
 
-	V3 v2 = vectorAdd(v1, gap);
+	V3 v2 = v1 + gap;
 
 	// calculate the start and end coordinates in 2D
 	V2 start = project(v1);
@@ -402,8 +425,8 @@ float Renderer::applyPointLighting(V3& v1, V3& v2, V3& v3, LightSource& light) {
 	// gives.
 
 	// calculate the lines between vertices
-	V3 line1 = vectorSub(v2, v1);
-	V3 line2 = vectorSub(v3, v1);
+	V3 line1 = v2 - v1;
+	V3 line2 = v3 - v1;
 
 	// calculate the normal between the lines (the direction the line is facing)
 	V3 normal = vectorCrossProduct(line1, line2);
@@ -418,25 +441,23 @@ float Renderer::applyPointLighting(V3& v1, V3& v2, V3& v3, LightSource& light) {
 	viewTransform(L);
 
 	// apply camera rotation
-	rotateV3(L, camera.pitch, camera.yaw);
+	rotateV3(L, camera->pitch, camera->yaw);
 
 	// create vertex in the middle to get average diffuse factor TODO: SHOULD CALCULATE FOR EACH VERTEX AND LERP THEM?
-	V3 v4((v1.x + v2.x + v3.x) / 3.0f,
-		(v1.y + v2.y + v3.y) / 3.0f,
-		(v1.z + v2.z + v3.z) / 3.0f);
+	V3 v4 = (v1 + v2 + v3) / 3.0f;
 
 	// calculate the direction of the light to the vertex
-	V3 light_direction = vectorSub(L, v4);
+	V3 light_direction = L - v4;
 	float light_distance = light_direction.size();
 	light_direction.normalize();
 
 	// coordinates get flipped so we must invert the light direction
-	light_direction.x *= -1;
-	light_direction.y *= -1;
-	light_direction.z *= -1;
+	light_direction *= -1;
 
 	// calculate how much the vertex is lit
 	float diffuse_factor = vectorDotProduct(light_direction, normal);
+	//std::cout << diffuse_factor << std::endl;
+	// TODO: diffuse factor is extremely low when close
 
 	// determine if the face is lit by the lightsource
 	if (diffuse_factor < 0.0f) {
@@ -445,7 +466,7 @@ float Renderer::applyPointLighting(V3& v1, V3& v2, V3& v3, LightSource& light) {
 		float b = 0.01f / light.strength;
 
 		float attenuation = 1.0f / (1.0f + (a * light_distance) + (b * light_distance * light_distance));
-
+		
 		return abs(diffuse_factor * attenuation);
 	}
 	return 0.0f;
@@ -456,8 +477,8 @@ float Renderer::applyPointLighting(V3& v1, V3& v2, V3& v3, LightSource& light) {
 void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 	// little hack for viewpoint lighting, set the first
 	// lightsource's position to the camera
-	LightSource::sources[0]->position = camera.position;
-
+	LightSource::sources[0]->position = camera->position;
+	
 	// calculate the material colour parts 
 	Colour face_colour(0, 0, 0);
 
@@ -475,9 +496,9 @@ void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 			face_colour.r += dp * light->colour.r * base_colour.r;
 			face_colour.g += dp * light->colour.g * base_colour.g;
 			face_colour.b += dp * light->colour.b * base_colour.b;
-
 		}
 	}
+
 	// scale the colour
 	face_colour.r /= 255.0f;
 	face_colour.g /= 255.0f;
@@ -487,44 +508,45 @@ void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 	base_colour = face_colour;
 } 
 
-
-
-void Renderer::render() {
+void Renderer::renderScene(Scene* scene) {
 	// clear screen
-	setBackgroundColour();
+	setBackgroundColour(COLOUR::WHITE.toInt());
 
 	// initialize depth buffer with z-far (maximum z distance)
 	std::fill(depthBuffer.begin(), depthBuffer.end(), farPlane); // TODO: is farPlane working right?
 	
 	// actually render the scene
 	// loop through each mesh
-	for (int m = 0; m < Mesh::meshes.size(); ++m) {
-		Mesh* mesh = Mesh::meshes[m]; // get the pointer to the mesh
-	
+	//for (int m = 0; m < Mesh::meshes.size(); ++m) {
+	for (int s = 0; s < scene->objects.size(); ++s) {
+		//Mesh* mesh = Mesh::meshes[m]; // get the pointer to the mesh
+		Mesh* mesh = scene->objects[s]->mesh; // get the pointer to the mesh
 		// store all of the mesh triangles
 		std::vector<Triangle3D> triangles;
 
 		// loop through each face in mesh
 		for (int i = 0; i < mesh->faces.size(); ++i) {
 			// get mesh face vertices
-			V3 v1(mesh->vertices[mesh->faces[i][0]][0], mesh->vertices[mesh->faces[i][0]][1], mesh->vertices[mesh->faces[i][0]][2]);
-			V3 v2(mesh->vertices[mesh->faces[i][1]][0], mesh->vertices[mesh->faces[i][1]][1], mesh->vertices[mesh->faces[i][1]][2]);
-			V3 v3(mesh->vertices[mesh->faces[i][2]][0], mesh->vertices[mesh->faces[i][2]][1], mesh->vertices[mesh->faces[i][2]][2]);
+			V3 v1(mesh->vertices[mesh->faces[i][0]].x, mesh->vertices[mesh->faces[i][0]].y, mesh->vertices[mesh->faces[i][0]].z);
+			V3 v2(mesh->vertices[mesh->faces[i][1]].x, mesh->vertices[mesh->faces[i][1]].y, mesh->vertices[mesh->faces[i][1]].z);
+			V3 v3(mesh->vertices[mesh->faces[i][2]].x, mesh->vertices[mesh->faces[i][2]].y, mesh->vertices[mesh->faces[i][2]].z);
 			
 			// convert from World Space -> Camera Space
 
 			// scale vertices to mesh size
-			vectorMultBy(v1, mesh->size);
-			vectorMultBy(v2, mesh->size);
-			vectorMultBy(v3, mesh->size);
+			v1 *= mesh->size;
+			v2 *= mesh->size;
+			v3 *= mesh->size;
 
 			// translate mesh into mesh position
-			vectorAddTo(v1, mesh->pos);
-			vectorAddTo(v2, mesh->pos);
-			vectorAddTo(v3, mesh->pos);
+			v1 += mesh->pos;
+			v2 += mesh->pos;
+			v3 += mesh->pos;
 
 			// rotate mesh face
 			rotateMeshFace(v1, v2, v3, mesh->pos, mesh->pitch, mesh->yaw);
+
+			// SHOULD THIS ALL BE DONE PREMTIVELY?
 
 			// apply view transformation
 			viewTransform(v1);
@@ -532,9 +554,9 @@ void Renderer::render() {
 			viewTransform(v3);
 
 			// apply camera rotation
-			rotateV3(v1, camera.pitch, camera.yaw);
-			rotateV3(v2, camera.pitch, camera.yaw);
-			rotateV3(v3, camera.pitch, camera.yaw);
+			rotateV3(v1, camera->pitch, camera->yaw);
+			rotateV3(v2, camera->pitch, camera->yaw);
+			rotateV3(v3, camera->pitch, camera->yaw);
 
 			// cull backfaces
 			if (backfaceCull(v1, v2, v3)) {
@@ -544,7 +566,6 @@ void Renderer::render() {
 		}
 
 		// frustum culling
-		
 		// determine if the mesh is fully inside the frustum
 		int state = viewFrustum.isMeshVisible(triangles); // 0 = fully inside, 1 = fully outside, 2 = mesh intersects plane 
 		
@@ -580,7 +601,7 @@ void Renderer::render() {
 
 			// this is painfully slow.
 			// clipping 2d triangles shouldn't be the solution as this would create more triangles to draw.
-			drawTriangle(pv1, pv2, pv3, colour.toInt(), fill); // very slow.			
+			drawTriangle(pv1, pv2, pv3, colour.toInt(), fill); // very slow.
 		}
 	}
 	
@@ -593,7 +614,9 @@ void Renderer::render() {
 
 	// draw rectangle
 	drawRectangle(center_x - thickness, center_y - thickness, center_x + thickness, center_y + thickness, COLOUR::WHITE.toInt());
+}
 
-	// render the buffer to the screen
-	SDL_UpdateWindowSurface(window);
+void Renderer::cleanup() {
+	// cleanup all resources
+	SDL_DestroyWindow(window);
 }

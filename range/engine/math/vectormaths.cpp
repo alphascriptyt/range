@@ -3,44 +3,6 @@
 #include <cmath>
 
 // vector functions
-V3 vectorAdd(V3& v1, V3& v2) {
-	return V3(
-		v1.x + v2.x,
-		v1.y + v2.y,
-		v1.z + v2.z
-	);
-}
-
-void vectorAddTo(V3& v1, V3& v2) {
-	// add to the reference rather than returning new
-	v1.x += v2.x;
-	v1.y += v2.y;
-	v1.z += v2.z;
-}
-
-V3 vectorSub(V3& v1, V3& v2) {
-	return V3(
-		v1.x - v2.x,
-		v1.y - v2.y,
-		v1.z - v2.z
-	);
-}
-
-V3 vectorMult(V3& v1, V3& v2) {
-	return V3(
-		v1.x * v2.x,
-		v1.y * v2.y,
-		v1.z * v2.z
-	);
-}
-
-void vectorMultBy(V3& v1, V3& v2) {
-	// multiply the reference rather than returning new
-	v1.x *= v2.x;
-	v1.y *= v2.y;
-	v1.z *= v2.z;
-}
-
 V3 vectorCrossProduct(V3& v1, V3& v2) {
 	// calculate the cross product of two vectors
 	return V3(
@@ -60,16 +22,13 @@ V3 vectorIntersectPlane(V3& v1, V3& v2, Plane& plane) {
 
 	float ad = vectorDotProduct(v1, plane.normal);
 	float bd = vectorDotProduct(v2, plane.normal);
-	V3 line_start_to_end = vectorSub(v2, v1);
+	V3 line_start_to_end = v2 - v1;
 
 	float t = (-plane_d - ad) / vectorDotProduct(line_start_to_end, plane.normal);
 	
-	V3 line_to_intersect = line_start_to_end;
-	line_to_intersect.x *= t;
-	line_to_intersect.y *= t;
-	line_to_intersect.z *= t;
+	V3 line_to_intersect = line_start_to_end * t;
 
-	return vectorAdd(v1, line_to_intersect);
+	return v1 + line_to_intersect;
 }
 
 void rotateV3(V3& v, float pitch, float yaw) {
@@ -90,18 +49,6 @@ void rotateV3(V3& v, float pitch, float yaw) {
 	v = multiplyBy4x1(rotation_matrix, v);
 }
 
-/*
-M4 multiplyByM4(M4& m2) {
-	M4 m; // out matrix
-	for (int r = 0; r < 4; r++) {
-		for (int c = 0; c < 4; c++) {
-			m[r][c] = elements[r][0] * m[0][c] + elements[r][1] * m[1][c] + elements[r][2] * m[2][c] + elements[r][3] * m[3][c];
-		}
-	}
-	return m;
-}
-*/
-
 V3 multiplyBy4x1(M4& m, V3& v) {
 	V3 out;
 
@@ -118,7 +65,7 @@ float findSignedDistance(V3& v, Plane& plane) {
 	// between a plane and a vertex
 
 	// find the vector between the plane point and vertex
-	V3 between = vectorSub(v, plane.point);
+	V3 between = v - plane.point;
 
 	// return the signed distance that the between vector goes
 	// in the direction of the plane's normal

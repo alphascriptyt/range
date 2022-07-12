@@ -40,6 +40,8 @@ void Colour::clampComponents() {
 
 uint32_t Colour::toInt() {
 	// return an integer representation of RGB
+
+	// clamp components to 255
 	clampComponents();
 	
 	// pack into XRGB format to match SDL surface
@@ -53,6 +55,10 @@ void Colour::print() {
 
 SDL_Colour Colour::toSDL() {
 	// helper method to convert the colour to SDL (mainly for KISS_SDL use)
+
+	// clamp components to 255
+	clampComponents();
+
 	SDL_Colour c = { 0 };
 	c.r = r;
 	c.g = g;

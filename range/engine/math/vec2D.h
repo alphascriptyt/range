@@ -16,8 +16,3 @@ public:
 	// methods
 	void print(); // easily print vector for debugging
 };
-
-// vector related methods
-V2 vectorAdd(V2& v1, V2& v2);
-void vectorAddTo(V2& v1, V2& v2);
-V2 vectorSub(V2& v1, V2& v2);

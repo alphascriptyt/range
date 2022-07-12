@@ -1,4 +1,5 @@
 #pragma once
+#include "vec3d.h"
 
 #include <vector>
 
@@ -6,6 +7,6 @@
 
 // define the cube preset properties
 namespace Cube {
-	extern std::vector<std::vector<float>> vertices;
+	extern std::vector<V3> vertices;
 	extern std::vector<std::vector<int>> faces;
 }
