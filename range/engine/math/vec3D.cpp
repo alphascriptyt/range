@@ -29,6 +29,7 @@ float V3::sizeSquared() {
 void V3::normalize() {
 	// make the vector's size 1
 	float magnitude = size();
+	if (magnitude == 0) { return; }
 	x /= magnitude;
 	y /= magnitude;
 	z /= magnitude;

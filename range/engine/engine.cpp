@@ -22,9 +22,6 @@ bool Engine::setup(int w, int h) {
 		return false;
 	}
 
-	// setup the 
-	physics.camera = &camera;
-
 	// force the mouse inside of the window
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 
@@ -196,7 +193,7 @@ void Engine::loop() {
 		// TODO: setup.
 		// physics need to interact with meshes/renderer/camera somehow etc? 
 		// https://www.youtube.com/watch?v=-_IspRG548E
-		physics.process(dt);
+		physics.process(camera, dt);
 
 		// render scene
 		renderer.renderScene(Scene::scenes[0]);

@@ -141,6 +141,7 @@
     <ClCompile Include="engine\physics\AABB.cpp" />
     <ClCompile Include="engine\physics\collision.cpp" />
     <ClCompile Include="engine\physics\physics.cpp" />
+    <ClCompile Include="engine\physics\physicsdata.cpp" />
     <ClCompile Include="engine\renderer\camera.cpp" />
     <ClCompile Include="engine\engine.cpp" />
     <ClCompile Include="engine\renderer\colour.cpp" />
@@ -168,6 +169,7 @@
     <ClInclude Include="engine\physics\AABB.h" />
     <ClInclude Include="engine\physics\collision.h" />
     <ClInclude Include="engine\physics\physics.h" />
+    <ClInclude Include="engine\physics\physicsdata.h" />
     <ClInclude Include="engine\renderer\camera.h" />
     <ClInclude Include="engine\engine.h" />
     <ClInclude Include="engine\renderer\colour.h" />

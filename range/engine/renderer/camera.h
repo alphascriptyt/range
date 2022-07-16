@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vec3D.h"
+#include "../physics/physicsdata.h"
 
 #include <SDL.h>
 #include <cmath>
@@ -12,7 +13,9 @@ class Camera {
 
 public:
 	// properties
-	V3 position = V3(0, 0, 0);	// a 3D vector of the cameras position
+	PhysicsData physics;
+
+	//V3 position = V3(0, 0, 0);	// a 3D vector of the cameras position
 	V3 direction = V3(0, 0, 0);	// a 3D vector of the cameras direction
 	float pitch = 0;			// pitch viewangle
 	float yaw = 0;				// yaw viewangle

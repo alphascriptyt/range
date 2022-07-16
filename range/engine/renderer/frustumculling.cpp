@@ -41,7 +41,7 @@ void ViewFrustum::setViewFrustumPlanes() {
 	frustum_planes.push_back(right);
 	frustum_planes.push_back(top);
 	frustum_planes.push_back(bottom);
-
+	
 	planes = frustum_planes;
 }
 
@@ -62,6 +62,8 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 
 		bool in_first = false;
 		bool in_second = false;
+
+		Colour colour = tri.colour;
 
 		// determine which points are inside or outside of the plane
 		if (d1 >= 0) {
@@ -107,18 +109,18 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 
 			if (in_first) {
 				Triangle3D tri = Triangle3D(inside_points[0], nv1, nv2);
-				tri.colour = COLOUR::RED;
+				tri.colour = colour;
 				clipped.push_back(tri);
 			}
 			else {
 				if (in_second) {
 					Triangle3D tri = Triangle3D(nv1, inside_points[0], nv2);
-					tri.colour = COLOUR::RED;
+					tri.colour = colour;
 					clipped.push_back(tri);
 				}
 				else {
 					Triangle3D tri = Triangle3D(nv1, nv2, inside_points[0]);
-					tri.colour = COLOUR::RED;
+					tri.colour = colour;
 					clipped.push_back(tri);
 				}
 			}
@@ -134,31 +136,31 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 			if (in_first) {
 				if (in_second) {
 					Triangle3D tri1 = Triangle3D(inside_points[0], inside_points[1], nv1);
-					tri1.colour = COLOUR::GREEN;
+					tri1.colour = colour;
 					clipped.push_back(tri1);
 
 					Triangle3D tri2 = Triangle3D(nv1, inside_points[1], nv2);
-					tri2.colour = COLOUR::GOLD;
+					tri2.colour = colour;
 					clipped.push_back(tri2);
 				}
 				else {
 					Triangle3D tri1 = Triangle3D(inside_points[0], nv1, inside_points[1]);
-					tri1.colour = COLOUR::GREEN;
+					tri1.colour = colour;
 					clipped.push_back(tri1);
 
 					Triangle3D tri2 = Triangle3D(nv1, nv2, inside_points[1]);
-					tri2.colour = COLOUR::GOLD;
+					tri2.colour = colour;
 					clipped.push_back(tri2);
 				}
 
 			}
 			else {
 				Triangle3D tri1 = Triangle3D(nv1, inside_points[0], inside_points[1]);
-				tri1.colour = COLOUR::GREEN;
+				tri1.colour = colour;
 				clipped.push_back(tri1);
 
 				Triangle3D tri2 = Triangle3D(nv1, inside_points[1], nv2);
-				tri2.colour = COLOUR::GOLD;
+				tri2.colour = colour;
 				clipped.push_back(tri2);
 			}
 

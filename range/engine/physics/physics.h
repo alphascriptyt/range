@@ -26,22 +26,12 @@ lightsources are not sceneobjects but their representing meshes may be
 
 */
 
-struct PhysicsData {
-	// properties
-	V3 position = V3(0, 0, 0);
-	V3 velocity = V3(0, 0, 0);
-	V3 force = V3(0, 0, 0);
-	float mass = 0;
-	
-	// flags
 
-};
 
 class Physics {
 	float gravity = -9.8;
 
 public:
-	Camera* camera = nullptr;	// engine camera
-	void process(float dt);
+	void process(Camera& camera, float dt);
 };
 

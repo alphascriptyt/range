@@ -34,6 +34,7 @@
     <ClCompile Include="engine\physics\physics.cpp" />
     <ClCompile Include="engine\scene.cpp" />
     <ClCompile Include="engine\sceneobject.cpp" />
+    <ClCompile Include="engine\physics\physicsdata.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\engine.h" />
@@ -60,5 +61,6 @@
     <ClInclude Include="engine\physics\physics.h" />
     <ClInclude Include="engine\scene.h" />
     <ClInclude Include="engine\sceneobject.h" />
+    <ClInclude Include="engine\physics\physicsdata.h" />
   </ItemGroup>
 </Project>

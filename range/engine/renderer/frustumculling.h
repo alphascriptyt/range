@@ -9,7 +9,7 @@
 
 class ViewFrustum {
 	float zNear = 0.1f;
-	std::vector<Plane> planes; // store the planes representing the view frustum
+	std::vector<Plane> planes;		// store the planes representing the view frustum
 
 	void setViewFrustumPlanes();	// method to get the planes for the view frustum
 

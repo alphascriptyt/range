@@ -60,7 +60,7 @@ bool Renderer::init() {
 	}
 	
 	// create the viewpoint lightsource (has to be created first so we can access it easily)
-	LightSource* viewpoint = new LightSource(camera->position, COLOUR::WHITE, 10); // create on heap so GC doesn't delete it
+	LightSource* viewpoint = new LightSource(camera->physics.position, COLOUR::WHITE, 10); // create on heap so GC doesn't delete it
 
 	return true;
 }
@@ -289,9 +289,9 @@ void Renderer::renderText(char* text, Colour& colour, int x, int y) {
 // rendering methods
 void Renderer::viewTransform(V3& v) {
 	// translate scene with respect to camera
-	v.x -= camera->position.x;
-	v.y -= camera->position.y;
-	v.z -= camera->position.z;
+	v.x -= camera->physics.position.x;
+	v.y -= camera->physics.position.y;
+	v.z -= camera->physics.position.z;
 }
 
 bool Renderer::backfaceCull(V3& v1, V3& v2, V3& v3) {
@@ -302,6 +302,7 @@ bool Renderer::backfaceCull(V3& v1, V3& v2, V3& v3) {
 	V3 vs2 = v3 - v1;
 	V3 n = vectorCrossProduct(vs1, vs2);
 
+	//if (vectorDotProduct(v1, n) <= 0) {
 	if (vectorDotProduct(v1, n) <= 0) {
 		return true; // TODO: THIS IS A BIT MISLEADING, MAYBE CHANGE
 	}
@@ -477,7 +478,7 @@ float Renderer::applyPointLighting(V3& v1, V3& v2, V3& v3, LightSource& light) {
 void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 	// little hack for viewpoint lighting, set the first
 	// lightsource's position to the camera
-	LightSource::sources[0]->position = camera->position;
+	LightSource::sources[0]->position = camera->physics.position;
 	
 	// calculate the material colour parts 
 	Colour face_colour(0, 0, 0);
@@ -561,7 +562,9 @@ void Renderer::renderScene(Scene* scene) {
 			// cull backfaces
 			if (backfaceCull(v1, v2, v3)) {
 				// if the triangle is facing the camera, add it to the draw queue
-				triangles.push_back(Triangle3D(v1, v2, v3));
+				Triangle3D tri(v1, v2, v3);
+				tri.colour = *mesh->colours[i];
+				triangles.push_back(tri);
 			}
 		}
 
@@ -582,16 +585,14 @@ void Renderer::renderScene(Scene* scene) {
 		for (int t = 0; t < triangles.size(); ++t) {
 			// lighting
 			
-			//Colour colour = Colour(mesh->colours[i]->toInt());
-			Colour colour = Colour(mesh->colours[0]->toInt());
-			//colour = clipped[t].colour;
+			Colour colour = Colour(triangles[t].colour.toInt());
 
 			bool fill = true;
 			
 			// only apply lighting to filled meshes
 			if (fill && mesh->absorbsLight) {
 				// apply point lighting
-				applyLighting(triangles[t].v1, triangles[t].v2, triangles[t].v3, colour);
+				//applyLighting(triangles[t].v1, triangles[t].v2, triangles[t].v3, colour);
 			}
 
 			// project vertices to 2D - Camera Space -> Screen Space
