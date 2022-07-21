@@ -24,21 +24,21 @@ LightSource* Scene::createLightSource(std::string& key, V3& pos, Colour& colour,
 	return light;
 }
 
-SceneObject* Scene::createSceneObject(std::string& key, Mesh& mesh, PhysicsData& physics) {
-	// create the new scene object
-	SceneObject* object = new SceneObject();
+Entity* Scene::createEntity(std::string& key, Mesh& mesh, PhysicsData& physics) {
+	// create the new scene entity
+	Entity* entity = new Entity();
 
-	// initialize object data
-	object->mesh = &mesh;
-	object->physics = &physics;
+	// initialize entity data
+	entity->mesh = &mesh;
+	entity->physics = &physics;
 
-	// add the scene object to the container
-	objects.push_back(object);
+	// add the scene entity to the container
+	entities.push_back(entity);
 
-	// add the scene object key to the container
-	objectKeys.push_back(key);
+	// add the scene entity key to the container
+	entityKeys.push_back(key);
 
-	return object;
+	return entity;
 }
 
 LightSource* Scene::getLightSource(std::string& key) {
@@ -53,11 +53,11 @@ LightSource* Scene::getLightSource(std::string& key) {
 	return nullptr;
 }
 
-SceneObject* Scene::getSceneObject(std::string& key) {
+Entity* Scene::getEntity(std::string& key) {
 	// search for the matching key
-	for (int i = 0; i < objectKeys.size(); ++i) {
-		if (objectKeys[i] == key) {
-			return objects[i];
+	for (int i = 0; i < entityKeys.size(); ++i) {
+		if (entityKeys[i] == key) {
+			return entities[i];
 		}
 	}
 

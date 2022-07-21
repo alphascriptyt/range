@@ -99,7 +99,7 @@ void Mesh::fillColour(Colour colour) {
 	colours = {};
 
 	// create a new colour from the colour to avoid bad references from the colour passed
-	Colour* c = new Colour(colour.toInt());
+	Colour* c = new Colour(colour.toInt()); // TODO: Why am I using pointers?
 
 	// fill the mesh faces with the colour
 	for (int i = 0; i < faces.size(); ++i) {

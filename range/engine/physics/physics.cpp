@@ -7,6 +7,89 @@
 #include "physicsdata.h"
 #include "../renderer/triangle3D.h"
 
+// This function solves the quadratic eqation "At^2 + Bt + C = 0" and is found in Kasper Fauerby's paper on collision detection and response
+bool getLowestRoot(float a, float b, float c, float maxR, float* root)
+{
+	// Check if a solution exists
+	float determinant = b * b - 4.0f * a * c;
+	// If determinant is negative it means no solutions.
+	if (determinant < 0.0f) return false;
+	// calculate the two roots: (if determinant == 0 then
+	// x1==x2 but lets disregard that slight optimization)
+	float sqrtD = sqrt(determinant);
+	float r1 = (-b - sqrtD) / (2 * a);
+	float r2 = (-b + sqrtD) / (2 * a);
+	// Sort so x1 <= x2
+	if (r1 > r2) {
+		float temp = r2;
+		r2 = r1;
+		r1 = temp;
+	}
+	// Get lowest root:
+	if (r1 > 0 && r1 < maxR) {
+		*root = r1;
+		return true;
+	}
+	// It is possible that we want x2 - this can happen
+	// if x1 < 0
+	if (r2 > 0 && r2 < maxR) {
+		*root = r2;
+		return true;
+	}
+
+	// No (valid) solutions
+	return false;
+}
+
+bool checkPointInTriangle(V3& point, V3& v1, V3& v2, V3& v3, V3& N) {
+	// Step 2: inside-outside test
+	V3 C;  //vector perpendicular to triangle's plane 
+
+	// edge 0
+	V3 edge0 = v2 - v1;
+	V3 vp0 = point - v1;
+	C = vectorCrossProduct(edge0, vp0);
+	if (vectorDotProduct(N, C) < 0) return false;  //P is on the right side  // TODO: >=?
+
+	// edge 1
+	V3 edge1 = v3 - v2;
+	V3 vp1 = point - v2;
+	C = vectorCrossProduct(edge1, vp1);
+	if (vectorDotProduct(N, C) < 0)  return false;  //P is on the right side 
+
+	// edge 2
+	V3 edge2 = v1 - v3;
+	V3 vp2 = point - v3;
+	C = vectorCrossProduct(edge2, vp2);
+	if (vectorDotProduct(N, C) < 0) return false;  //P is on the right side; 
+
+	return true;  //this ray hits the triangle 
+}
+
+bool checkPointInTriangle2(V3& point, V3& a, V3& b, V3& c) {
+	// https://blackpawn.com/texts/pointinpoly/
+	// https://www.youtube.com/watch?v=HYAgJN3x4GA
+	// Compute vectors        
+	V3 v0 = c - a;
+	V3 v1 = b - a;
+	V3 v2 = point - a;
+
+	// Compute dot products
+	float dot00 = vectorDotProduct(v0, v0);
+	float dot01 = vectorDotProduct(v0, v1);
+	float dot02 = vectorDotProduct(v0, v2);
+	float dot11 = vectorDotProduct(v1, v1);
+	float dot12 = vectorDotProduct(v1, v2);
+
+	// Compute barycentric coordinates
+	float invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
+	float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+	float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+	// Check if point is in triangle
+	return (u >= 0) && (v >= 0) && (u + v < 1);
+}
+
 // https://gamedev.stackexchange.com/questions/96459/fast-ray-sphere-collision-code
 static bool intersectRaySegmentSphere(V3 o, V3 d, V3 so, float radius2, V3& ip)
 {
@@ -67,31 +150,31 @@ bool rayTriangleIntersect(V3& orig, V3& dir, V3& v0, V3& v1, V3& v2, float& t) {
 
 	// check if the triangle is in behind the ray
 	if (t > 0) return false;   //the triangle is behind 
-	
+
 	// compute the intersection point using equation 1
 	V3 P = orig + dir * t;
 
 	// Step 2: inside-outside test
 	V3 C;  //vector perpendicular to triangle's plane 
-	
+
 	// edge 0
 	V3 edge0 = v1 - v0;
 	V3 vp0 = P - v0;
 	C = vectorCrossProduct(edge0, vp0);
 	if (vectorDotProduct(N, C) < 0) return false;  //P is on the right side 
-	
+
 	// edge 1
 	V3 edge1 = v2 - v1;
 	V3 vp1 = P - v1;
 	C = vectorCrossProduct(edge1, vp1);
 	if (vectorDotProduct(N, C) < 0)  return false;  //P is on the right side 
-	
+
 	// edge 2
 	V3 edge2 = v0 - v2;
 	V3 vp2 = P - v2;
 	C = vectorCrossProduct(edge2, vp2);
 	if (vectorDotProduct(N, C) < 0) return false;  //P is on the right side; 
-	
+
 	return true;  //this ray hits the triangle 
 }
 
@@ -113,7 +196,7 @@ bool intersectRaySphere(V3& origin, V3& direction, V3& center, float radius, flo
 	// If t is negative, ray started inside sphere so clamp t to zero 
 	if (t < 0.0f) t = 0.0f;
 	q = origin + direction * t;
-	
+
 	return true;
 }
 
@@ -121,43 +204,95 @@ float intersectSphere(V3& ray_origin, V3& ray_vector, V3& sO, double sR) {
 	return 1;
 }
 
+void testVertexAndSphere(V3& v, V3& position, V3& velocity, float a, float& t, bool& colliding_with_tri, V3& collision) {
+	// P0 - Collision test with sphere and v1
+	V3 pos_to_vertex = position - v;
+	float b = 2.0f * (vectorDotProduct(velocity, pos_to_vertex));
+	V3 edge = v - position;
+	float c = edge.sizeSquared() - 1.0f;
+	float newT;
+	if (getLowestRoot(a, b, c, t, &newT)) {    // Check if the equation can be solved
+		// If the equation was solved, we can set a couple things. First we set t (distance
+		// down velocity vector the sphere first collides with vertex) to the temporary newT,
+		// Then we set collidingWithTri to be true so we know there was for sure a collision
+		// with the triangle, then we set the exact point the sphere collides with the triangle,
+		// which is the position of the vertex it collides with
+		t = newT;
+		colliding_with_tri = true;
+		collision = v;
+	}
+}
+
+void testEdgeAndSphere(V3& v1, V3& v2, V3& position, V3& velocity, float velocity_length_squared, float& t, bool& colliding_with_tri, V3& collision) {
+	// Edge (v1, v2):
+	V3 edge = v2 - v1;
+	V3 spherePositionToVertex = v1 - position;
+	float edgeLengthSquared = edge.sizeSquared();
+
+	float edgeDotVelocity = vectorDotProduct(edge, velocity);
+	float edgeDotSpherePositionToVertex = vectorDotProduct(edge, spherePositionToVertex);
+	float spherePositionToVertexLengthSquared = spherePositionToVertex.sizeSquared();
+
+	// Equation parameters
+	float a = edgeLengthSquared * -velocity_length_squared + (edgeDotVelocity * edgeDotVelocity);
+	float b = edgeLengthSquared * (2.0f * vectorDotProduct(velocity, spherePositionToVertex)) - (2.0f * edgeDotVelocity * edgeDotSpherePositionToVertex);
+	float c = edgeLengthSquared * (1.0f - spherePositionToVertexLengthSquared) + (edgeDotSpherePositionToVertex * edgeDotSpherePositionToVertex);
+
+	float newT;
+	// We start by finding if the swept sphere collides with the edges "infinite line"
+	if (getLowestRoot(a, b, c, t, &newT)) {
+		// Now we check to see if the collision happened between the two vertices that make up this edge
+		// We can calculate where on the line the collision happens by doing this:
+		// f = (edge . velocity)newT - (edge . spherePositionToVertex) / edgeLength^2
+		// if f is between 0 and 1, then we know the collision happened between p0 and p1
+		// If the collision happened at p0, the f = 0, if the collision happened at p1 then f = 1
+		float f = (edgeDotVelocity * newT - edgeDotSpherePositionToVertex) / edgeLengthSquared;
+		if (f >= 0.0f && f <= 1.0f) {
+			// If the collision with the edge happened, we set the results
+			t = newT;
+			colliding_with_tri = true;
+			collision = v1 + edge * f;
+		}
+	}
+}
+
 void Physics::process(Camera& camera, float dt) {
-	int count = 0;
-	
 	// update the velocity for the camera (apply gravity)
 	camera.physics.updateVelocity(dt);
-	
+
+	// TODO: should be recalculated.
 	// calculate intended camera destination
-	V3 destination = camera.physics.position + camera.physics.velocity * dt; // * dt??
+	
+	for (int i = 0; i < Scene::scenes[0]->entities.size(); ++i) {
+		// get the scene entity
+		Entity* entity = Scene::scenes[0]->entities[i];
 
-	for (int i = 0; i < Scene::scenes[0]->objects.size(); ++i) {
-		// get the scene object
-		SceneObject* object = Scene::scenes[0]->objects[i];
+		// get the entity's physics data
+		PhysicsData* data = entity->physics;
 
-		// get the object's physics data
-		PhysicsData* data = object->physics;
-
-		// find mesh bounding box, maybe save this for clipping??
-		AABB aabb(object->mesh);
+		// find mesh bounding box, maybe pre-calculate this and save for clipping??
+		AABB aabb(entity->mesh);
 
 		// find collisions with camera and mesh
 		V3 intersection_old;
 		float dist;
-		if (pointCollidesWithAABB(destination, aabb, intersection_old, dist)) {
-			count++;
-			object->mesh->fillColour(COLOUR::GREEN);	
-			
-			// found a collision with the mesh, not sure if we should be doing it this way but oh well, may be a good optimisation
-			// rather than checking every tri
 
-			Mesh* mesh = object->mesh;
-			float sphere_radius = 3;
+		V3 ellipsoid(1, 3, 1);
+
+		V3 initial_destination = camera.physics.position + camera.physics.velocity * dt;
+
+		// check if we're possibly going to collide with the mesh
+		if (pointCollidesWithAABB(initial_destination, aabb, intersection_old, dist)) {
+			Mesh* mesh = entity->mesh;
+
+			// check each face for an actual collision with each face
 			for (int i = 0; i < mesh->faces.size(); ++i) {
 				// get mesh face vertices
-				V3 v1(mesh->vertices[mesh->faces[i][0]].x, mesh->vertices[mesh->faces[i][0]].y, mesh->vertices[mesh->faces[i][0]].z);
-				V3 v2(mesh->vertices[mesh->faces[i][1]].x, mesh->vertices[mesh->faces[i][1]].y, mesh->vertices[mesh->faces[i][1]].z);
-				V3 v3(mesh->vertices[mesh->faces[i][2]].x, mesh->vertices[mesh->faces[i][2]].y, mesh->vertices[mesh->faces[i][2]].z);
+				V3 v1 = mesh->vertices[mesh->faces[i][0]];
+				V3 v2 = mesh->vertices[mesh->faces[i][1]];
+				V3 v3 = mesh->vertices[mesh->faces[i][2]];
 
+				// convert raw vertices to world coordinates
 				v1 *= mesh->size;
 				v1 += data->position;
 
@@ -167,7 +302,31 @@ void Physics::process(Camera& camera, float dt) {
 				v3 *= mesh->size;
 				v3 += data->position;
 
-				// determine if the tri is a backface and ignore it if so
+				// rotate mesh face
+				// translate vertices to origin for rotation
+				V3 tv1 = v1 - data->position;
+				V3 tv2 = v2 - data->position;
+				V3 tv3 = v3 - data->position;
+
+				// rotate vertices
+				rotateV3(tv1, mesh->pitch, mesh->yaw);
+				rotateV3(tv2, mesh->pitch, mesh->yaw);
+				rotateV3(tv3, mesh->pitch, mesh->yaw);
+
+				// translate vertices back to original position
+				v1 = data->position + tv1;
+				v2 = data->position + tv2;
+				v3 = data->position + tv3;
+
+				// convert everything to ellipsoid space
+				v1 /= ellipsoid;
+				v2 /= ellipsoid;
+				v3 /= ellipsoid;
+
+				V3 position = camera.physics.position / ellipsoid;
+				V3 velocity = camera.physics.velocity / ellipsoid * dt;
+
+				// calculate the triangle plane
 				V3 edge1 = v2 - v1;
 				V3 edge2 = v3 - v1;
 				V3 normal = vectorCrossProduct(edge1, edge2);
@@ -175,99 +334,183 @@ void Physics::process(Camera& camera, float dt) {
 
 				Plane tri_plane = Plane(normal, v1);
 
-				V3 normalised_velocity = camera.physics.velocity;
+				// find the velocity direction
+				V3 normalised_velocity = velocity;
 				normalised_velocity.normalize();
 
-				// determine if the triangle is a backface, velocity is direction
-				float dot_product = vectorDotProduct(normalised_velocity, normal);
+				// does the 'sphere' collide with the triangle
+
+				// does the normal gone in the same direction as the velocity?
+				float dot_product = vectorDotProduct(normal, normalised_velocity);
 
 				// ignore backfaces as we cannot collide with them
-				//if (dot_product >= 0) {
-			//		std::cout << "dot failed" << std::endl;
-			//		continue; 
-			//	}
-
-				// calculate signed distance from plane to camera position
-				float d = findSignedDistance(destination, tri_plane); // should this be destination??
-
-				// sphere does not intersect plane
-				if (fabs(d) > sphere_radius) {
-					std::cout << "fabs failed" << std::endl;
-					continue;
-				}
-				float radius_squared = sphere_radius * sphere_radius;
-
-				// the ray vector is the camera.physics.velocity
-				V3 ray_vector = normalised_velocity;
-				V3 ray_origin = camera.physics.position;
-				//std::cout << "Dir: "; ray_vector.print();
-				V3 intersection;
-				//std::cout << "D: " << d << std::endl;
-
-
-				bool outside_verts = false;
-				if ((v1 - destination).sizeSquared() > radius_squared && 
-					(v2 - destination).sizeSquared() > radius_squared && 
-					(v3 - destination).sizeSquared() > radius_squared) {
-					std::cout << "outside verts" << std::endl;
-					outside_verts = true;
-				}
-
-				bool outside_edges = false;
-
-				V3 a = v2 - v1;
-				V3 b = v3 - v2;
-				V3 c = v1 - v3;
-
-				V3 ip;
-				if (!intersectRaySegmentSphere(v1, a, destination, radius_squared, ip) &&
-					!intersectRaySegmentSphere(v2, b, destination, radius_squared, ip) &&
-					!intersectRaySegmentSphere(v3, c, destination, radius_squared, ip)) {
-					//sphere outside of all triangle edges
-					outside_edges = true;
-					std::cout << "outside edges" << std::endl;
-				}
-
-				float t;
-				if (!rayTriangleIntersect(ray_origin, ray_vector, v1, v2, v3, t) && outside_verts && outside_edges) {
-					std::cout << "all failed" << std::endl;
+				if (dot_product >= 0) {
 					continue;
 				}
 
-				intersection = ray_origin + (ray_vector * t * dt); // CORRECT INTERSECTION.
+				// pre-calculate values to do with the triangle plane
+				float signed_dist = findSignedDistance(position, tri_plane);
+				float dot_normal_velocity = vectorDotProduct(tri_plane.normal, velocity);
+
+				bool sphere_in_plane = false;
+				float t0 = 0.0f;
+				float t1 = 1.0f;
+
+				// check if velocity is perpendicular to plane NORMAL, then swept sphere is moving parallel
+				if (dot_normal_velocity == 0.0f) {
+					if (fabs(signed_dist) >= 1.0f) { // unit sphere radius of 1, so check if plane is outside this distance
+						// sphere is not within 1 unit of plane and moving parallel to plane, collision is impossible.
+						continue;
+					}
+					else {
+						sphere_in_plane = true;
+					}
+				}
+				else {
+					// velocity at some point will intersect with plane because both are infinitely long
+
+					// calculate time of intersection
+					t0 = (-1.0f - signed_dist) / dot_normal_velocity;
+					t1 = (1.0f - signed_dist) / dot_normal_velocity;
+
+					// ensure t0 is smaller so it is the first point where the sphere touches
+					if (t0 > t1) {
+						std::swap(t0, t1);
+					}
+
+					// if sphere intersects the plane outside of the velocity, then it doesn't intersect the face
+					if (t0 > 1.0f || t1 < 0.0f) {
+						continue;
+					}
+
+					// clamp t0 and t1
+					if (t0 < 0.0) { t0 = 0.0; }
+					if (t1 > 1.0) { t1 = 1.0; }
+				}
+
+				// sphere inside triangle testing
+				V3 collision;
+				bool colliding_with_tri = false;
+				float t = 1.0f;
+
+				if (!sphere_in_plane) {
+					V3 plane_intersection = position - tri_plane.normal + velocity * t0;
+
+					if (checkPointInTriangle2(plane_intersection, v1, v2, v3)) {
+						colliding_with_tri = true;
+						t = t0;
+						collision = plane_intersection;
+					}
+				}
+
+				// sphere vertex collision test
+				if (!colliding_with_tri) {
+					// We will be working with the quadratic function "At^2 + Bt + C = 0" to find when (t) the "swept sphere"s center
+					// is 1 unit (spheres radius) away from the vertex position. Remember the swept spheres position is actually a line defined
+					// by the spheres position and velocity. t represents it's position along the velocity vector.
+					// a = sphereVelocityLength * sphereVelocityLength
+					// b = 2(sphereVelocity . (spherePosition - vertexPosition))    // . denotes dot product
+					// c = (vertexPosition - spherePosition)^2 - 1
+					// This equation allows for two solutions. One is when the sphere "first" touches the vertex, and the other is when
+					// the "other" side of the sphere touches the vertex on it's way past the vertex. We need the first "touch"
+					float a; // Equation Parameters
+
+					// We can use the squared velocities length below when checking for collisions with the edges of the triangles
+					// to, so to keep things clear, we won't set a directly
+					float velocityLengthSquared = velocity.sizeSquared();
+
+					// We'll start by setting 'a', since all 3 point equations use this 'a'
+					a = velocityLengthSquared;
+
+					// Collision test with sphere and v1
+					testVertexAndSphere(v1, position, velocity, a, t, colliding_with_tri, collision);
+
+					// Collision test with sphere and v2
+					testVertexAndSphere(v2, position, velocity, a, t, colliding_with_tri, collision);
+
+					// Collision test with sphere and v3
+					testVertexAndSphere(v3, position, velocity, a, t, colliding_with_tri, collision);
+
+					//////////////////////////////////////////////Sphere-Edge Collision Test//////////////////////////////////////////////
+					// Even though there might have been a collision with a vertex, we will still check for a collision with an edge of the
+					// triangle in case an edge was hit before the vertex. Again we will solve a quadratic equation to find where (and if)
+					// the swept sphere's position is 1 unit away from the edge of the triangle. The equation parameters this time are a 
+					// bit more complex: (still "Ax^2 + Bx + C = 0")
+					// a = edgeLength^2 * -velocityLength^2 + (edge . velocity)^2
+					// b = edgeLength^2 * 2(velocity . spherePositionToVertex) - 2((edge . velocity)(edge . spherePositionToVertex))
+					// c =  edgeLength^2 * (1 - spherePositionToVertexLength^2) + (edge . spherePositionToVertex)^2
+					// . denotes dot product
+
+					// EDGE SEEMS TO BE WORKING.
+					
+					// edge v1v2
+					testEdgeAndSphere(v1, v2, position, velocity, velocityLengthSquared, t, colliding_with_tri, collision);
+
+					// Edge (v2, v3):
+					testEdgeAndSphere(v2, v3, position, velocity, velocityLengthSquared, t, colliding_with_tri, collision);
+
+					// Edge (v3, v1):
+					testEdgeAndSphere(v3, v1, position, velocity, velocityLengthSquared, t, colliding_with_tri, collision);
+				}
+
+				if (!colliding_with_tri) {
+					continue;
+				}
+
+				// the camera ellipsoid collides with the face, therefore do the collision response
+
+				// collision response
+
+				float dist_to_collision = t * velocity.size();
+
+				V3 new_base_point = position;
+				V3 destination_point = position + velocity;
+
+				// bring mesh closer to collision 
+				float very_close_distance = 0.25;
 				
+				if (dist_to_collision >= very_close_distance) {
+					V3 V = velocity;
+					V.normalize();
+					V *= (dist_to_collision - very_close_distance);
+					new_base_point = position + V * dt;
 
-
-				camera.physics.velocity = intersection - camera.physics.position;
-				camera.physics.velocity.normalize();
-
-				// ISSUE: when we move and then normalize, because we have extra x/z movement, there is less y, meaning the 
-				// camera dips below, so what do we need to scale (intersection - camera.physics.position) by?
-
-
-				//camera.physics.velocity *= d;
-				//camera.physics.position = intersection;
-				//camera.physics.velocity = V3();
-				//camera.physics.acceleration = V3();
+					V.normalize();
+					collision -= V * very_close_distance * dt;
+				}
 				
-				// respond to collision
-				mesh->colours[i] = &COLOUR::GOLD;
-				printf("response\n");
-				count++;
+				// camera sliding
+				
+				// calculate sliding plane
+				//V3 slide_plane_origin = collision;
+				V3 slide_plane_normal = new_base_point - collision;
+				//slide_plane_normal.normalize();
+				//Plane sliding_plane(slide_plane_normal, slide_plane_origin);
 
+				//V3 new_destination_point = destination_point - slide_plane_normal * findSignedDistance(destination_point, sliding_plane);
+
+				// move the camera down the velocity vector to the point of collision
+				camera.physics.position = (new_base_point + velocity * t0) * ellipsoid;
+
+				// calculate the vector that points along the triangle plane
+				// by projecting the incoming direction of velocity onto the sliding plane normal
+				// then using vector addition to calculate the vector along the plane.
+				// everything here is normalised, therefore not in ellipsoid space.
+				V3 along = normalised_velocity - (slide_plane_normal * vectorDotProduct(normalised_velocity, slide_plane_normal));
+				
+				// calculate the new velocity by applying the incoming speed (velocity size) to the direction
+				camera.physics.velocity = along * camera.physics.velocity.size();
 			}
 		}
-		else {
-			object->mesh->fillColour(COLOUR::RED);
-		}
-		
+
 		// if there is physics data, use suvat and compute the new properties
 		if (data != nullptr) {
 			data->compute(dt); // TODO: Move above collision detection?
 		}
 	}
 
+	// update the velocity for the camera (apply gravity)
 	camera.physics.compute(dt);
-
 	
+
 };

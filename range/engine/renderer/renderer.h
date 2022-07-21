@@ -16,6 +16,8 @@
 #include <vector>
 #include <string>
 
+// TODO: static methods begin and end for rendering?
+
 // renderer class to wrap SDL_Renderer and my own rendering
 class Renderer {
 private:
@@ -84,6 +86,8 @@ public:
 	void drawRectangle(int x1, int y1, int x2, int y2, int colour);
 	void drawTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill = true); // calls other drawing functions - TODO: should take in corresponding colours for each vertex?
 	void setBackgroundColour(int colour = 0); // fill background with colour (default = black)
+
+	void drawNormal(V3& origin, V3& normal);
 
 	// text drawing methods
 	void renderText(char* text, Colour& colour, int x, int y);

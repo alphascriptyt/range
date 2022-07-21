@@ -302,11 +302,9 @@ bool Renderer::backfaceCull(V3& v1, V3& v2, V3& v3) {
 	V3 vs2 = v3 - v1;
 	V3 n = vectorCrossProduct(vs1, vs2);
 
-	//if (vectorDotProduct(v1, n) <= 0) {
 	if (vectorDotProduct(v1, n) <= 0) {
 		return true; // TODO: THIS IS A BIT MISLEADING, MAYBE CHANGE
 	}
-
 	return false;
 }
 
@@ -346,6 +344,16 @@ void Renderer::setBackgroundColour(int colour) {
 	std::fill(pixelBuffer, pixelBuffer + bufferLength, colour);
 }
 
+void Renderer::drawNormal(V3& origin, V3& normal) {
+	V3 destination = origin + normal * 10;
+
+	std::vector<V3> vertices = { {0,0,0}, {1,1,1}, {0,1,1} };
+	std::vector<std::vector<int>> faces = { {0, 1, 2} };
+
+	Mesh* mesh = new Mesh(vertices, faces, origin, destination, COLOUR::LIME);
+
+}
+
 void Renderer::rotateMeshFace(V3& v1, V3& v2, V3& v3, V3& pos, float pitch, float yaw) {
 	// translate vertices to origin for rotation
 	V3 tv1 = v1 - pos;
@@ -377,6 +385,8 @@ void Renderer::drawLine3D(V3& v1, V3& direction, float length) {
 	V2 start = project(v1);
 	V2 end = project(v2);
 
+	if (start.x > end.x) { std::swap(start, end); }
+
 	// linear interpolate for each pixel in the line
 	int dx, dy, p, y;
 
@@ -392,17 +402,18 @@ void Renderer::drawLine3D(V3& v1, V3& direction, float length) {
 		bool visible = true;
 
 		// if y is off screen or y is below screen, ignore
-		if (y > (WN_HEIGHT - 1) || y < 1) { visible = false; }
+		if (y > (WN_HEIGHT - 1) || y < 0) { visible = false; }
 
 		// ignore line that starts past right side
-		if (x > (WN_WIDTH)) { visible = false; }
+		if (x > WN_WIDTH - 1) { visible = false; }
 
 		// ignore point past left side
 		if (x < 0) { visible = false; }
 
 		if (p >= 0) {
 			if (visible) {
-				pixelBuffer[x + (y * WN_WIDTH)] = 0xFF000000;
+				pixelBuffer[x + (y * WN_WIDTH)] = COLOUR::LIME.toInt();
+				depthBuffer[x + (y * WN_WIDTH)] = -1;
 			}
 
 			y = y + 1;
@@ -410,7 +421,8 @@ void Renderer::drawLine3D(V3& v1, V3& direction, float length) {
 		}
 		else {
 			if (visible) {
-				pixelBuffer[x + (y * WN_WIDTH)] = 0xFF000000;
+				pixelBuffer[x + (y * WN_WIDTH)] = COLOUR::LIME.toInt();
+				depthBuffer[x + (y * WN_WIDTH)] = -1;
 			}
 
 			p = p + 2 * dy;
@@ -515,13 +527,13 @@ void Renderer::renderScene(Scene* scene) {
 
 	// initialize depth buffer with z-far (maximum z distance)
 	std::fill(depthBuffer.begin(), depthBuffer.end(), farPlane); // TODO: is farPlane working right?
-	
+
 	// actually render the scene
 	// loop through each mesh
 	//for (int m = 0; m < Mesh::meshes.size(); ++m) {
-	for (int s = 0; s < scene->objects.size(); ++s) {
+	for (int s = 0; s < scene->entities.size(); ++s) {
 		//Mesh* mesh = Mesh::meshes[m]; // get the pointer to the mesh
-		Mesh* mesh = scene->objects[s]->mesh; // get the pointer to the mesh
+		Mesh* mesh = scene->entities[s]->mesh; // get the pointer to the mesh
 		// store all of the mesh triangles
 		std::vector<Triangle3D> triangles;
 
@@ -584,15 +596,14 @@ void Renderer::renderScene(Scene* scene) {
 		// loop through clipped triangles
 		for (int t = 0; t < triangles.size(); ++t) {
 			// lighting
-			
-			Colour colour = Colour(triangles[t].colour.toInt());
+			Colour colour = triangles[t].colour;
 
 			bool fill = true;
 			
 			// only apply lighting to filled meshes
 			if (fill && mesh->absorbsLight) {
 				// apply point lighting
-				//applyLighting(triangles[t].v1, triangles[t].v2, triangles[t].v3, colour);
+				applyLighting(triangles[t].v1, triangles[t].v2, triangles[t].v3, colour);
 			}
 
 			// project vertices to 2D - Camera Space -> Screen Space

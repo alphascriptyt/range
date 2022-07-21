@@ -153,7 +153,7 @@
     <ClCompile Include="engine\renderer\triangle2D.cpp" />
     <ClCompile Include="engine\renderer\triangle3D.cpp" />
     <ClCompile Include="engine\scene.cpp" />
-    <ClCompile Include="engine\sceneobject.cpp" />
+    <ClCompile Include="engine\entity.cpp" />
     <ClCompile Include="game\game.cpp" />
     <ClCompile Include="engine\math\mat4D.cpp" />
     <ClCompile Include="engine\math\mathutils.cpp" />
@@ -181,7 +181,7 @@
     <ClInclude Include="engine\renderer\triangle2D.h" />
     <ClInclude Include="engine\renderer\triangle3D.h" />
     <ClInclude Include="engine\scene.h" />
-    <ClInclude Include="engine\sceneobject.h" />
+    <ClInclude Include="engine\entity.h" />
     <ClInclude Include="game\game.h" />
     <ClInclude Include="engine\math\mat4D.h" />
     <ClInclude Include="engine\math\mathutils.h" />

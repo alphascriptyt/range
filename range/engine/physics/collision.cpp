@@ -36,7 +36,7 @@ bool pointCollidesWithAABB(V3& point, AABB& box, V3& intersection, float& dist) 
 	}
 
 	float temp = 0.25; 
-	std::cout << squared_distance << std::endl;
+	//std::cout << squared_distance << std::endl;
 	if (squared_distance < temp) {
 		dist = squared_distance;
 		return true;
