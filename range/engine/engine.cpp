@@ -85,7 +85,7 @@ bool Engine::loadScene(std::string filename) {
 }
 
 void Engine::handleEvents(float& dt) {
-	dt *= 10; // magic value...
+	dt *= 10; // TODO: sort this maybe? or just remove and scale up the rest magic value...
 
 	SDL_Event ev;
 

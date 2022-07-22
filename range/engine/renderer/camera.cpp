@@ -19,10 +19,16 @@ void Camera::move(const Uint8* keys, float dt) {
 	// flag to determine whether the camera was moved in a direction
 	bool moved = false;
 
+	// TODO: use enum for camera modes like mode = CAMERA_MODE_NOCLIP, but need to properly plan out tings.
+	float speed = 50 * physics.mass;
 	// moving forwards
 	if (keys[SDL_SCANCODE_W]) {
 		physics.velocity.x += dt * std::sin(yaw);
 		physics.velocity.z += dt * std::cos(yaw);
+
+		//physics.force.x += dt * std::sin(yaw) * speed;
+		//physics.force.z += dt * std::cos(yaw) * speed;
+		
 		//position.x += dt * std::sin(yaw);
 		//position.z += dt * std::cos(yaw);
 		moved = true;
@@ -55,11 +61,12 @@ void Camera::move(const Uint8* keys, float dt) {
 		moved = true;
 	}
 
+	/*
 	if (!moved) {
 		physics.velocity.x = 0;
 		physics.velocity.z = 0;
 	}
-
+	*/
 	moved = false;
 
 	// moving down
@@ -72,7 +79,7 @@ void Camera::move(const Uint8* keys, float dt) {
 	// moving up
 	if (keys[SDL_SCANCODE_SPACE]) {
 		//physics.position.y += dt;
-		physics.velocity.y += dt;
+		physics.velocity.y += dt * 3;
 		moved = true;
 	}
 

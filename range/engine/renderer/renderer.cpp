@@ -557,7 +557,8 @@ void Renderer::renderScene(Scene* scene) {
 			v3 += mesh->pos;
 
 			// rotate mesh face
-			rotateMeshFace(v1, v2, v3, mesh->pos, mesh->pitch, mesh->yaw);
+			rotateMeshFace(v1, v2, v3, mesh->pos, mesh->pitch, mesh->yaw); // TODO: CAN WE NOT DO THIS BEFORE SCALING AND POSITIONING? 
+																			// THEN WE DON'T NEED TO RE-POSITION?
 
 			// SHOULD THIS ALL BE DONE PREMTIVELY?
 

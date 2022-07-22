@@ -260,9 +260,6 @@ void Physics::process(Camera& camera, float dt) {
 	// update the velocity for the camera (apply gravity)
 	camera.physics.updateVelocity(dt);
 
-	// TODO: should be recalculated.
-	// calculate intended camera destination
-	
 	for (int i = 0; i < Scene::scenes[0]->entities.size(); ++i) {
 		// get the scene entity
 		Entity* entity = Scene::scenes[0]->entities[i];
@@ -277,8 +274,10 @@ void Physics::process(Camera& camera, float dt) {
 		V3 intersection_old;
 		float dist;
 
+		// define a radius for the ellipsoid 
 		V3 ellipsoid(1, 3, 1);
 
+		// calculate intended camera destination
 		V3 initial_destination = camera.physics.position + camera.physics.velocity * dt;
 
 		// check if we're possibly going to collide with the mesh
@@ -318,6 +317,8 @@ void Physics::process(Camera& camera, float dt) {
 				v2 = data->position + tv2;
 				v3 = data->position + tv3;
 
+				// CAMERA SLIDING USING ELLIPSOID SPACE CREDITS: http://www.peroxide.dk/papers/collision/collision.pdf - Kasper Fauerby
+
 				// convert everything to ellipsoid space
 				v1 /= ellipsoid;
 				v2 /= ellipsoid;
@@ -356,10 +357,10 @@ void Physics::process(Camera& camera, float dt) {
 				float t0 = 0.0f;
 				float t1 = 1.0f;
 
-				// check if velocity is perpendicular to plane NORMAL, then swept sphere is moving parallel
+				// check if velocity is perpendicular to plane NORMAL, then swept sphere is moving parallel to the plane
 				if (dot_normal_velocity == 0.0f) {
 					if (fabs(signed_dist) >= 1.0f) { // unit sphere radius of 1, so check if plane is outside this distance
-						// sphere is not within 1 unit of plane and moving parallel to plane, collision is impossible.
+						// sphere is not within 1 unit of plane and moving parallel to plane, so collision is impossible.
 						continue;
 					}
 					else {
@@ -388,7 +389,7 @@ void Physics::process(Camera& camera, float dt) {
 					if (t1 > 1.0) { t1 = 1.0; }
 				}
 
-				// sphere inside triangle testing
+				// test if the sphere is inside the triangle
 				V3 collision;
 				bool colliding_with_tri = false;
 				float t = 1.0f;
@@ -441,8 +442,6 @@ void Physics::process(Camera& camera, float dt) {
 					// c =  edgeLength^2 * (1 - spherePositionToVertexLength^2) + (edge . spherePositionToVertex)^2
 					// . denotes dot product
 
-					// EDGE SEEMS TO BE WORKING.
-					
 					// edge v1v2
 					testEdgeAndSphere(v1, v2, position, velocity, velocityLengthSquared, t, colliding_with_tri, collision);
 
@@ -457,16 +456,15 @@ void Physics::process(Camera& camera, float dt) {
 					continue;
 				}
 
-				// the camera ellipsoid collides with the face, therefore do the collision response
+				// the unit sphere (camera ellipsoid) collides with the face, therefore do the collision response
 
 				// collision response
-
 				float dist_to_collision = t * velocity.size();
 
 				V3 new_base_point = position;
 				V3 destination_point = position + velocity;
 
-				// bring mesh closer to collision 
+				// bring mesh closer to collision if necessary
 				float very_close_distance = 0.25;
 				
 				if (dist_to_collision >= very_close_distance) {
@@ -479,15 +477,11 @@ void Physics::process(Camera& camera, float dt) {
 					collision -= V * very_close_distance * dt;
 				}
 				
-				// camera sliding
+				// camera sliding - my own algorithm
 				
 				// calculate sliding plane
-				//V3 slide_plane_origin = collision;
 				V3 slide_plane_normal = new_base_point - collision;
-				//slide_plane_normal.normalize();
-				//Plane sliding_plane(slide_plane_normal, slide_plane_origin);
-
-				//V3 new_destination_point = destination_point - slide_plane_normal * findSignedDistance(destination_point, sliding_plane);
+				slide_plane_normal.normalize();
 
 				// move the camera down the velocity vector to the point of collision
 				camera.physics.position = (new_base_point + velocity * t0) * ellipsoid;
@@ -497,9 +491,9 @@ void Physics::process(Camera& camera, float dt) {
 				// then using vector addition to calculate the vector along the plane.
 				// everything here is normalised, therefore not in ellipsoid space.
 				V3 along = normalised_velocity - (slide_plane_normal * vectorDotProduct(normalised_velocity, slide_plane_normal));
-				
+
 				// calculate the new velocity by applying the incoming speed (velocity size) to the direction
-				camera.physics.velocity = along * camera.physics.velocity.size();
+				camera.physics.velocity = along * camera.physics.velocity.size(); // TODO: should slow down as angle increases between incoming velocity and wall.
 			}
 		}
 
@@ -511,6 +505,4 @@ void Physics::process(Camera& camera, float dt) {
 
 	// update the velocity for the camera (apply gravity)
 	camera.physics.compute(dt);
-	
-
 };
