@@ -77,9 +77,9 @@ public:
 	Renderer(int w, int h);
 
 	// rendering API
-	bool init();						// setup renderer
-	void renderScene(Scene* scene);		// actually render the scene
-	void cleanup();						// cleanup all renderer resources and SDL instances
+	bool init(const std::string& window_name);	// setup renderer
+	void renderScene(Scene* scene);				// render the scene to the buffer
+	void cleanup();								// cleanup all renderer resources and SDL instances
 
 	// 2D primitive drawing
 	void drawScanLine(int x1, int x2, int y, int colour, float z1 = -1, float z2 = -1, bool fill = true); // basic line drawing for triangle methods with depth testing

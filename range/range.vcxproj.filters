@@ -28,7 +28,6 @@
     <ClCompile Include="engine\renderer\triangle2D.cpp" />
     <ClCompile Include="engine\renderer\frustumculling.cpp" />
     <ClCompile Include="engine\math\plane.cpp" />
-    <ClCompile Include="game\game.cpp" />
     <ClCompile Include="engine\physics\collision.cpp" />
     <ClCompile Include="engine\physics\AABB.cpp" />
     <ClCompile Include="engine\physics\physics.cpp" />
@@ -55,7 +54,6 @@
     <ClInclude Include="engine\renderer\triangle2D.h" />
     <ClInclude Include="engine\renderer\frustumculling.h" />
     <ClInclude Include="engine\math\plane.h" />
-    <ClInclude Include="game\game.h" />
     <ClInclude Include="engine\physics\collision.h" />
     <ClInclude Include="engine\physics\AABB.h" />
     <ClInclude Include="engine\physics\physics.h" />

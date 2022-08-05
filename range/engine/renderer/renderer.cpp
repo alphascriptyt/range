@@ -31,9 +31,9 @@ void Renderer::createProjectionMatrix() {
 	projectionMatrix.setRow(3, 0, 0, (2 * nearPlane * farPlane) / (nearPlane - farPlane), 0);
 }
 
-bool Renderer::init() {
+bool Renderer::init(const std::string& window_name) {
 	// create window
-	window = SDL_CreateWindow("Test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WN_WIDTH, WN_HEIGHT, SDL_WINDOW_SHOWN);
+	window = SDL_CreateWindow(window_name.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WN_WIDTH, WN_HEIGHT, SDL_WINDOW_SHOWN);
 
 	if (!window) {
 		printf("Failed to create window - %s\n", SDL_GetError());
@@ -60,7 +60,7 @@ bool Renderer::init() {
 	}
 	
 	// create the viewpoint lightsource (has to be created first so we can access it easily)
-	LightSource* viewpoint = new LightSource(camera->physics.position, COLOUR::WHITE, 10); // create on heap so GC doesn't delete it
+	Scene::scenes[0]->createLightSource("viewpoint", camera->physics.position, COLOUR::WHITE, 10);
 
 	return true;
 }
@@ -345,13 +345,7 @@ void Renderer::setBackgroundColour(int colour) {
 }
 
 void Renderer::drawNormal(V3& origin, V3& normal) {
-	V3 destination = origin + normal * 10;
-
-	std::vector<V3> vertices = { {0,0,0}, {1,1,1}, {0,1,1} };
-	std::vector<std::vector<int>> faces = { {0, 1, 2} };
-
-	Mesh* mesh = new Mesh(vertices, faces, origin, destination, COLOUR::LIME);
-
+	
 }
 
 void Renderer::rotateMeshFace(V3& v1, V3& v2, V3& v3, V3& pos, float pitch, float yaw) {
@@ -533,18 +527,26 @@ void Renderer::renderScene(Scene* scene) {
 	//for (int m = 0; m < Mesh::meshes.size(); ++m) {
 	for (int s = 0; s < scene->entities.size(); ++s) {
 		//Mesh* mesh = Mesh::meshes[m]; // get the pointer to the mesh
-		Mesh* mesh = scene->entities[s]->mesh; // get the pointer to the mesh
+		Entity* entity = scene->entities[s];
+		Mesh* mesh = entity->mesh; // get the pointer to the mesh
 		// store all of the mesh triangles
 		std::vector<Triangle3D> triangles;
 
 		// loop through each face in mesh
 		for (int i = 0; i < mesh->faces.size(); ++i) {
 			// get mesh face vertices
-			V3 v1(mesh->vertices[mesh->faces[i][0]].x, mesh->vertices[mesh->faces[i][0]].y, mesh->vertices[mesh->faces[i][0]].z);
-			V3 v2(mesh->vertices[mesh->faces[i][1]].x, mesh->vertices[mesh->faces[i][1]].y, mesh->vertices[mesh->faces[i][1]].z);
-			V3 v3(mesh->vertices[mesh->faces[i][2]].x, mesh->vertices[mesh->faces[i][2]].y, mesh->vertices[mesh->faces[i][2]].z);
+			V3 v1(mesh->vertices[mesh->faces[i][0]]);
+			V3 v2(mesh->vertices[mesh->faces[i][1]]);
+			V3 v3(mesh->vertices[mesh->faces[i][2]]);
 			
 			// convert from World Space -> Camera Space
+			
+			//rotateMeshFace(v1, v2, v3, mesh->pos, mesh->pitch, mesh->yaw); // TODO: CAN WE NOT DO THIS BEFORE SCALING AND POSITIONING? 
+			
+			// rotate mesh face - before scaling and translating so we do not need to re-position
+			rotateV3(v1, mesh->pitch, mesh->yaw);
+			rotateV3(v2, mesh->pitch, mesh->yaw);
+			rotateV3(v3, mesh->pitch, mesh->yaw);
 
 			// scale vertices to mesh size
 			v1 *= mesh->size;
@@ -552,15 +554,13 @@ void Renderer::renderScene(Scene* scene) {
 			v3 *= mesh->size;
 
 			// translate mesh into mesh position
-			v1 += mesh->pos;
-			v2 += mesh->pos;
-			v3 += mesh->pos;
+			v1 += entity->physics->position;
+			v2 += entity->physics->position;
+			v3 += entity->physics->position;
 
-			// rotate mesh face
-			rotateMeshFace(v1, v2, v3, mesh->pos, mesh->pitch, mesh->yaw); // TODO: CAN WE NOT DO THIS BEFORE SCALING AND POSITIONING? 
-																			// THEN WE DON'T NEED TO RE-POSITION?
-
-			// SHOULD THIS ALL BE DONE PREMTIVELY?
+			// TODO: think of a way to transform coordinates to world coordinates?
+			// the problem is that if we're moving constantly, we will constantly have to reconstruct,
+			// meaning another loop through the vertices
 
 			// apply view transformation
 			viewTransform(v1);

@@ -12,18 +12,28 @@
 Engine::Engine() {
 }
 
-bool Engine::setup(int w, int h) {
+void Engine::onStartup() {
+}
+
+void Engine::onUpdate(float dt) {
+
+}
+
+bool Engine::setup(const std::string& window_name, int w, int h) {
 	// create the renderer
 	renderer = Renderer(w, h);
 	renderer.camera = &camera;
 	
 	// try intialize the renderer
-	if (!renderer.init()) {
+	if (!renderer.init(window_name)) {
 		return false;
 	}
 
 	// force the mouse inside of the window
 	SDL_SetRelativeMouseMode(SDL_TRUE);
+
+	// once everything has succeeded, trigger the onStartup event
+	onStartup();
 
 	// return success
 	return true;
@@ -59,7 +69,7 @@ bool Engine::loadScene(std::string filename) {
 			Colour colour(static_cast<uint32_t>(std::stoul(parts[8])));
 
 			// create a mesh
-			Mesh* mesh = new Mesh(mesh_path, pos, size, colour);
+			Mesh* mesh = new Mesh(mesh_path, size, colour);
 		}
 		else if (parts[0] == "light") {
 			// position is first 3 numbers
@@ -75,7 +85,7 @@ bool Engine::loadScene(std::string filename) {
 			LightSource* light = new LightSource(pos, colour, strength);
 
 			V3 light_mesh_size(0.2, 0.2, 0.2);
-			Mesh* light_mesh = new Mesh(Cube::vertices, Cube::faces, pos, light_mesh_size, colour);
+			Mesh* light_mesh = new Mesh(Cube::vertices, Cube::faces, light_mesh_size, colour);
 			light_mesh->makeLightSource(light);
 		}
 	}
@@ -117,6 +127,14 @@ void Engine::handleEvents(float& dt) {
 					handlingInput = true;
 				}
 				break;
+
+			case (SDLK_0):
+				camera.setMode(NOCLIP);
+				break;
+
+			case (SDLK_9):
+				camera.setMode(FIRST_PERSON);
+				break;
 			}
 			break;
 
@@ -147,8 +165,8 @@ void Engine::handleEvents(float& dt) {
 
 	// move camera
 	if (handlingInput) {
-		const Uint8* keys = SDL_GetKeyboardState(NULL);
-		renderer.camera->move(keys, dt);
+		keyboardState = SDL_GetKeyboardState(NULL);
+		renderer.camera->move(keyboardState, dt);
 	}
 }
 
@@ -186,13 +204,19 @@ void Engine::loop() {
 		// handle the next event
 		handleEvents(dt);
 
+		//std::string name = "player";
+		//Entity* player = Scene::scenes[0]->getEntity(name);
+		//player->physics->position = camera.physics.position + camera.direction + V3(0, -0.5, 4);
+		//player->mesh->yaw = -camera.yaw;
+
+		
 		// calculate delta time for time based movement		
 		dt = getDeltaTime(current_ticks, last_ticks);
 
+		// trigger the update event
+		onUpdate(dt);
+
 		// perform physics
-		// TODO: setup.
-		// physics need to interact with meshes/renderer/camera somehow etc? 
-		// https://www.youtube.com/watch?v=-_IspRG548E
 		physics.process(camera, dt);
 
 		// render scene
@@ -203,11 +227,10 @@ void Engine::loop() {
 			// calculate performance
 			fps = getCurrentFPS(start_perf); // calculate delta time and fps
 
-			// TEMP: display the FPS
-			//SDL_SetWindowTitle(renderer.window, std::to_string(fps).c_str());
-
 			// reset the timer
 			frame_timer.reset();
+
+			Scene::scenes[0]->getLightSource("viewpoint")->colour = Colour((rand() % 255), (rand() % 255), (rand() % 255));
 		}
 
 		renderer.renderText((char*)std::to_string(fps).c_str(), COLOUR::RED, 50, 50);

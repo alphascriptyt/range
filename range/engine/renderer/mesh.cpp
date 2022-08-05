@@ -9,27 +9,24 @@
 #include <iostream>
 
 // constructors
-Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, V3& p, Colour colour) {
+Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, Colour colour) {
 	vertices = v;
 	faces = f;
-	pos = p;
 
 	// set the mesh colour
 	fillColour(colour);
 }
 
-Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, V3& p, V3& s, Colour colour) {
+Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, V3& s, Colour colour) {
 	vertices = v;
 	faces = f;
-	pos = p;
 	size = s;
 
 	// set the mesh colour
 	fillColour(colour);
 }
 
-Mesh::Mesh(std::string filename, V3& p, Colour colour) {
-	pos = p;
+Mesh::Mesh(std::string filename, Colour colour) {
 	path = filename;
 
 	// try load the file
@@ -39,8 +36,7 @@ Mesh::Mesh(std::string filename, V3& p, Colour colour) {
 	}
 }
 
-Mesh::Mesh(std::string filename, V3& p, V3& s, Colour colour) {
-	pos = p;
+Mesh::Mesh(std::string filename, V3& s, Colour colour) {
 	size = s;
 	path = filename;
 
@@ -114,10 +110,10 @@ void Mesh::makeLightSource(LightSource* light) {
 	// set the mesh properties to the lights
 	lightsource = light;
 	fillColour(light->colour);
-	pos = light->position;
 }
 
 void Mesh::move(const Uint8* keys, float dt, float camera_yaw) {
+	/*
 	// moving forwards
 	if (keys[SDL_SCANCODE_W]) {
 		pos.x += dt * std::sin(camera_yaw);
@@ -157,4 +153,20 @@ void Mesh::move(const Uint8* keys, float dt, float camera_yaw) {
 	if (isLightSource && lightsource != nullptr) {
 		lightsource->position = pos;
 	}
+	*/
+}
+
+void Mesh::calculateCenter() {
+	center = V3();
+
+	int num_of_faces = faces.size();
+
+	// loop through each face in mesh
+	for (int i = 0; i < num_of_faces; ++i) {
+		// add to total
+		center += vertices[faces[i][0]] + vertices[faces[i][1]] + vertices[faces[i][2]];
+	}
+
+	// average the vertices
+	center /= num_of_faces * 3;
 }

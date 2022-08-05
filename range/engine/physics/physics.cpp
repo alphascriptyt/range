@@ -41,31 +41,6 @@ bool getLowestRoot(float a, float b, float c, float maxR, float* root)
 	return false;
 }
 
-bool checkPointInTriangle(V3& point, V3& v1, V3& v2, V3& v3, V3& N) {
-	// Step 2: inside-outside test
-	V3 C;  //vector perpendicular to triangle's plane 
-
-	// edge 0
-	V3 edge0 = v2 - v1;
-	V3 vp0 = point - v1;
-	C = vectorCrossProduct(edge0, vp0);
-	if (vectorDotProduct(N, C) < 0) return false;  //P is on the right side  // TODO: >=?
-
-	// edge 1
-	V3 edge1 = v3 - v2;
-	V3 vp1 = point - v2;
-	C = vectorCrossProduct(edge1, vp1);
-	if (vectorDotProduct(N, C) < 0)  return false;  //P is on the right side 
-
-	// edge 2
-	V3 edge2 = v1 - v3;
-	V3 vp2 = point - v3;
-	C = vectorCrossProduct(edge2, vp2);
-	if (vectorDotProduct(N, C) < 0) return false;  //P is on the right side; 
-
-	return true;  //this ray hits the triangle 
-}
-
 bool checkPointInTriangle2(V3& point, V3& a, V3& b, V3& c) {
 	// https://blackpawn.com/texts/pointinpoly/
 	// https://www.youtube.com/watch?v=HYAgJN3x4GA
@@ -88,120 +63,6 @@ bool checkPointInTriangle2(V3& point, V3& a, V3& b, V3& c) {
 
 	// Check if point is in triangle
 	return (u >= 0) && (v >= 0) && (u + v < 1);
-}
-
-// https://gamedev.stackexchange.com/questions/96459/fast-ray-sphere-collision-code
-static bool intersectRaySegmentSphere(V3 o, V3 d, V3 so, float radius2, V3& ip)
-{
-	//we pass in d non-normalized to keep it's length
-	//then we use that length later to compare the intersection point to make sure
-	//we're within the actual ray segment
-	float l = d.size();
-	d /= l;
-
-	V3 m = o - so;
-	float b = vectorDotProduct(m, d);
-	float c = vectorDotProduct(m, m) - radius2;
-
-	// Exit if r’s origin outside s (c > 0) and r pointing away from s (b > 0)
-	if (c > 0.0f && b > 0.0f)
-		return false;
-	float discr = b * b - c;
-
-	// A negative discriminant corresponds to ray missing sphere
-	if (discr < 0.0f)
-		return false;
-
-	// Ray now found to intersect sphere, compute smallest t value of intersection
-	float t = -b - sqrtf(discr);
-
-	// If t is negative, ray started inside sphere so clamp t to zero
-	if (t < 0.0f)
-		t = 0.0f;
-	ip = (d * t) + o;
-
-	//here's that last segment check I was talking about
-	if (t > l)
-		return false;
-
-	return true;
-}
-
-bool rayTriangleIntersect(V3& orig, V3& dir, V3& v0, V3& v1, V3& v2, float& t) {
-	// compute plane's normal
-	V3 v0v1 = v1 - v0;
-	V3 v0v2 = v2 - v0;
-	// no need to normalize
-	V3 N = vectorCrossProduct(v0v1, v0v2);  //N 
-	float area2 = N.size();
-
-	// Step 1: finding P
-
-	// check if ray and plane are parallel ?
-	float NdotRayDirection = vectorDotProduct(N, dir);
-	if (fabs(NdotRayDirection) < 0.00001)  //almost 0 kEpsilon?
-		return false;  //they are parallel so they don't intersect ! 
-
-	// compute d parameter using equation 2
-	float d = -vectorDotProduct(v0, N);
-
-	// compute t (equation 3)
-	t = -(vectorDotProduct(orig, N) + d) / NdotRayDirection;
-
-	// check if the triangle is in behind the ray
-	if (t > 0) return false;   //the triangle is behind 
-
-	// compute the intersection point using equation 1
-	V3 P = orig + dir * t;
-
-	// Step 2: inside-outside test
-	V3 C;  //vector perpendicular to triangle's plane 
-
-	// edge 0
-	V3 edge0 = v1 - v0;
-	V3 vp0 = P - v0;
-	C = vectorCrossProduct(edge0, vp0);
-	if (vectorDotProduct(N, C) < 0) return false;  //P is on the right side 
-
-	// edge 1
-	V3 edge1 = v2 - v1;
-	V3 vp1 = P - v1;
-	C = vectorCrossProduct(edge1, vp1);
-	if (vectorDotProduct(N, C) < 0)  return false;  //P is on the right side 
-
-	// edge 2
-	V3 edge2 = v0 - v2;
-	V3 vp2 = P - v2;
-	C = vectorCrossProduct(edge2, vp2);
-	if (vectorDotProduct(N, C) < 0) return false;  //P is on the right side; 
-
-	return true;  //this ray hits the triangle 
-}
-
-bool intersectRaySphere(V3& origin, V3& direction, V3& center, float radius, float& t, V3& q) {
-	V3 m = origin - center;
-	float b = vectorDotProduct(m, direction);
-	float c = vectorDotProduct(m, m) - (radius * radius);
-
-	// Exit if r’s origin outside s (c > 0) and r pointing away from s (b > 0) 
-	if (c > 0.0f && b > 0.0f) return false;
-	float discr = b * b - c;
-
-	// A negative discriminant corresponds to ray missing sphere 
-	if (discr < 0.0f) return false;
-
-	// Ray now found to intersect sphere, compute smallest t value of intersection
-	t = -b - sqrt(discr);
-
-	// If t is negative, ray started inside sphere so clamp t to zero 
-	if (t < 0.0f) t = 0.0f;
-	q = origin + direction * t;
-
-	return true;
-}
-
-float intersectSphere(V3& ray_origin, V3& ray_vector, V3& sO, double sR) {
-	return 1;
 }
 
 void testVertexAndSphere(V3& v, V3& position, V3& velocity, float a, float& t, bool& colliding_with_tri, V3& collision) {
@@ -256,7 +117,152 @@ void testEdgeAndSphere(V3& v1, V3& v2, V3& position, V3& velocity, float velocit
 	}
 }
 
+/*
+bool Physics::findCollision(Entity& entity1, Entity& entity2) {
+	// convert everything to ellipsoid space
+	v1 /= ellipsoid;
+	v2 /= ellipsoid;
+	v3 /= ellipsoid;
+
+	V3 position = camera.physics.position / ellipsoid;
+	V3 velocity = camera.physics.velocity / ellipsoid * dt;
+
+	// calculate the triangle plane
+	V3 edge1 = v2 - v1;
+	V3 edge2 = v3 - v1;
+	V3 normal = vectorCrossProduct(edge1, edge2);
+	normal.normalize();
+
+	Plane tri_plane = Plane(normal, v1);
+
+	// find the velocity direction
+	V3 normalised_velocity = velocity;
+	normalised_velocity.normalize();
+
+	// does the 'sphere' collide with the triangle
+
+	// does the normal gone in the same direction as the velocity?
+	float dot_product = vectorDotProduct(normal, normalised_velocity);
+
+	// ignore backfaces as we cannot collide with them
+	if (dot_product >= 0) {
+		continue;
+	}
+
+	// pre-calculate values to do with the triangle plane
+	float signed_dist = findSignedDistance(position, tri_plane);
+	float dot_normal_velocity = vectorDotProduct(tri_plane.normal, velocity);
+
+	bool sphere_in_plane = false;
+	float t0 = 0.0f;
+	float t1 = 1.0f;
+
+	// check if velocity is perpendicular to plane NORMAL, then swept sphere is moving parallel to the plane
+	if (dot_normal_velocity == 0.0f) {
+		if (fabs(signed_dist) >= 1.0f) { // unit sphere radius of 1, so check if plane is outside this distance
+			// sphere is not within 1 unit of plane and moving parallel to plane, so collision is impossible.
+			continue;
+		}
+		else {
+			sphere_in_plane = true;
+		}
+	}
+	else {
+		// velocity at some point will intersect with plane because both are infinitely long
+
+		// calculate time of intersection
+		t0 = (-1.0f - signed_dist) / dot_normal_velocity;
+		t1 = (1.0f - signed_dist) / dot_normal_velocity;
+
+		// ensure t0 is smaller so it is the first point where the sphere touches
+		if (t0 > t1) {
+			std::swap(t0, t1);
+		}
+
+		// if sphere intersects the plane outside of the velocity, then it doesn't intersect the face
+		if (t0 > 1.0f || t1 < 0.0f) {
+			continue;
+		}
+
+		// clamp t0 and t1
+		if (t0 < 0.0) { t0 = 0.0; }
+		if (t1 > 1.0) { t1 = 1.0; }
+	}
+
+	// test if the sphere is inside the triangle
+	V3 collision;
+	bool colliding_with_tri = false;
+	float t = 1.0f;
+
+	if (!sphere_in_plane) {
+		V3 plane_intersection = position - tri_plane.normal + velocity * t0;
+
+		if (checkPointInTriangle2(plane_intersection, v1, v2, v3)) {
+			colliding_with_tri = true;
+			t = t0;
+			collision = plane_intersection;
+		}
+	}
+
+	// sphere vertex collision test
+	if (!colliding_with_tri) {
+		// We will be working with the quadratic function "At^2 + Bt + C = 0" to find when (t) the "swept sphere"s center
+		// is 1 unit (spheres radius) away from the vertex position. Remember the swept spheres position is actually a line defined
+		// by the spheres position and velocity. t represents it's position along the velocity vector.
+		// a = sphereVelocityLength * sphereVelocityLength
+		// b = 2(sphereVelocity . (spherePosition - vertexPosition))    // . denotes dot product
+		// c = (vertexPosition - spherePosition)^2 - 1
+		// This equation allows for two solutions. One is when the sphere "first" touches the vertex, and the other is when
+		// the "other" side of the sphere touches the vertex on it's way past the vertex. We need the first "touch"
+		float a; // Equation Parameters
+
+		// We can use the squared velocities length below when checking for collisions with the edges of the triangles
+		// to, so to keep things clear, we won't set a directly
+		float velocityLengthSquared = velocity.sizeSquared();
+
+		// We'll start by setting 'a', since all 3 point equations use this 'a'
+		a = velocityLengthSquared;
+
+		// Collision test with sphere and v1
+		testVertexAndSphere(v1, position, velocity, a, t, colliding_with_tri, collision);
+
+		// Collision test with sphere and v2
+		testVertexAndSphere(v2, position, velocity, a, t, colliding_with_tri, collision);
+
+		// Collision test with sphere and v3
+		testVertexAndSphere(v3, position, velocity, a, t, colliding_with_tri, collision);
+
+		//////////////////////////////////////////////Sphere-Edge Collision Test//////////////////////////////////////////////
+		// Even though there might have been a collision with a vertex, we will still check for a collision with an edge of the
+		// triangle in case an edge was hit before the vertex. Again we will solve a quadratic equation to find where (and if)
+		// the swept sphere's position is 1 unit away from the edge of the triangle. The equation parameters this time are a 
+		// bit more complex: (still "Ax^2 + Bx + C = 0")
+		// a = edgeLength^2 * -velocityLength^2 + (edge . velocity)^2
+		// b = edgeLength^2 * 2(velocity . spherePositionToVertex) - 2((edge . velocity)(edge . spherePositionToVertex))
+		// c =  edgeLength^2 * (1 - spherePositionToVertexLength^2) + (edge . spherePositionToVertex)^2
+		// . denotes dot product
+
+		// edge v1v2
+		testEdgeAndSphere(v1, v2, position, velocity, velocityLengthSquared, t, colliding_with_tri, collision);
+
+		// Edge (v2, v3):
+		testEdgeAndSphere(v2, v3, position, velocity, velocityLengthSquared, t, colliding_with_tri, collision);
+
+		// Edge (v3, v1):
+		testEdgeAndSphere(v3, v1, position, velocity, velocityLengthSquared, t, colliding_with_tri, collision);
+	}
+
+	if (!colliding_with_tri) {
+		continue;
+	}
+}
+*/
+
+
 void Physics::process(Camera& camera, float dt) {
+	// TODO: come back to mesh vs mesh collisions, realistically there isn't much point for the game.
+	//		 but i would definitely like to add it eventually.
+
 	// update the velocity for the camera (apply gravity)
 	camera.physics.updateVelocity(dt);
 
@@ -268,7 +274,7 @@ void Physics::process(Camera& camera, float dt) {
 		PhysicsData* data = entity->physics;
 
 		// find mesh bounding box, maybe pre-calculate this and save for clipping??
-		AABB aabb(entity->mesh);
+		AABB aabb(entity->mesh, data->position);
 
 		// find collisions with camera and mesh
 		V3 intersection_old;
@@ -292,30 +298,17 @@ void Physics::process(Camera& camera, float dt) {
 				V3 v3 = mesh->vertices[mesh->faces[i][2]];
 
 				// convert raw vertices to world coordinates
+				rotateV3(v1, mesh->pitch, mesh->yaw);
+				rotateV3(v2, mesh->pitch, mesh->yaw);
+				rotateV3(v3, mesh->pitch, mesh->yaw);
+
 				v1 *= mesh->size;
-				v1 += data->position;
-
 				v2 *= mesh->size;
-				v2 += data->position;
-
 				v3 *= mesh->size;
+
+				v1 += data->position;
+				v2 += data->position;
 				v3 += data->position;
-
-				// rotate mesh face
-				// translate vertices to origin for rotation
-				V3 tv1 = v1 - data->position;
-				V3 tv2 = v2 - data->position;
-				V3 tv3 = v3 - data->position;
-
-				// rotate vertices
-				rotateV3(tv1, mesh->pitch, mesh->yaw);
-				rotateV3(tv2, mesh->pitch, mesh->yaw);
-				rotateV3(tv3, mesh->pitch, mesh->yaw);
-
-				// translate vertices back to original position
-				v1 = data->position + tv1;
-				v2 = data->position + tv2;
-				v3 = data->position + tv3;
 
 				// CAMERA SLIDING USING ELLIPSOID SPACE CREDITS: http://www.peroxide.dk/papers/collision/collision.pdf - Kasper Fauerby
 

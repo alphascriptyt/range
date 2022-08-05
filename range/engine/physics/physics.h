@@ -3,6 +3,7 @@
 
 #include "vec3d.h"
 #include "../renderer/camera.h"
+#include "../entity.h"
 
 /*
 Thinking about how objects in the game should work. Needs to be a hierarchy of objects.
@@ -33,5 +34,8 @@ class Physics {
 
 public:
 	void process(Camera& camera, float dt);
+
+	//bool findCollision(Entity& entity1, Entity& entity2);
+	//bool boardPhase(Entity* entity1, Entity* entity2);
 };
 

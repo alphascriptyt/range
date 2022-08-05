@@ -1,12 +1,14 @@
 #include "AABB.h"
-
+#include "vectormaths.h"
 // constructor
-AABB::AABB(Mesh* mesh) {
+AABB::AABB(Mesh* mesh, V3& pos) {
 	V3 vertex_world;
 	// find the minimum and maximum points from the vertices
 	for (int i = 0; i < mesh->vertices.size(); ++i) {
 		// calculate the world position of the vertex
-		vertex_world = (mesh->vertices[i] * mesh->size) + mesh->pos;
+		vertex_world = mesh->vertices[i];
+		rotateV3(vertex_world, mesh->pitch, mesh->yaw);
+		vertex_world = vertex_world * mesh->size + pos;
 
 		// find the maximum points
 		if (vertex_world.x > max.x) {
@@ -30,4 +32,11 @@ AABB::AABB(Mesh* mesh) {
 			min.z = vertex_world.z;
 		}
 	}
+
+	// calculate the center of the aabb
+	center = V3(
+		(min.x + max.x) / 2.0f,
+		(min.y + max.y) / 2.0f,
+		(min.z + max.z) / 2.0f
+	);
 }

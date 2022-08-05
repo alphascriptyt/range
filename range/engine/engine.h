@@ -18,8 +18,6 @@ class Engine {
 	// internal methods
 	void handleEvents(float& dt);	// handle all events 
 
-	Camera camera;
-
 public:
 	// constructor
 	Engine();
@@ -27,10 +25,20 @@ public:
 	// temp
 	bool loadScene(std::string filename);
 
-	// engine API
+	// main engine components
 	Renderer renderer;				// the current renderer instance
+	Camera camera;
 	Physics physics;
-	bool setup(int w, int h);		// setup the engine
-	void loop();					// main engine loop
-	void exit();					// cleanup all resources
+
+	// engine events to override for actual game
+	virtual void onStartup();
+	virtual void onUpdate(float dt);
+
+	// properties
+	const Uint8* keyboardState = SDL_GetKeyboardState(NULL);
+
+	// engine API
+	bool setup(const std::string& window_name, int w, int h);	// setup the engine
+	void loop();												// main engine loop
+	void exit();												// cleanup all resources
 };

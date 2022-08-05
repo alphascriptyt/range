@@ -8,15 +8,19 @@
 #include "lightsource.h"
 
 class Mesh {
+	
+
 public:										
+	void calculateCenter();
+
 	// mesh shape properties
 	std::vector<V3> vertices = {};
 	std::vector<std::vector<int>> faces = {};
 	std::vector<Colour*> colours = {};
 
 	// mesh properties
-	V3 pos = V3(0, 0, 0);
 	V3 size = V3(1, 1, 1);
+	V3 center = V3();
 	float pitch = 0;
 	float yaw = 0;
 	bool absorbsLight = true; // can be toggled off to simple render its normal colour without lighting
@@ -25,16 +29,16 @@ public:
 	std::string path = ""; // stores the path if the mesh was made from one
 
 	// constructor taking a reference to the vertices, faces and position of the mesh
-	Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, V3& p, Colour colour = COLOUR::WHITE);
+	Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, Colour colour = COLOUR::WHITE);
 
 	// constructor taking a reference to the vertices, faces, position and size of the mesh
-	Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, V3& p, V3& s, Colour colour = COLOUR::WHITE);
+	Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, V3& s, Colour colour = COLOUR::WHITE);
 
 	// constructor taking a filename and a reference to the position of the mesh
-	Mesh(std::string filename, V3& p, Colour colour = COLOUR::WHITE);
+	Mesh(std::string filename, Colour colour = COLOUR::WHITE);
 
 	// constructor taking a filename and references to the position and size of the mesh
-	Mesh(std::string filename, V3& p, V3& s, Colour colour = COLOUR::WHITE);
+	Mesh(std::string filename, V3& s, Colour colour = COLOUR::WHITE);
 
 	// method to load mesh from a file
 	bool loadFromObjFile(std::string filename);

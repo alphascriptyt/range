@@ -11,7 +11,7 @@ Scene::Scene() {
 }
 
 // methods
-LightSource* Scene::createLightSource(std::string& key, V3& pos, Colour& colour, float strength) {
+LightSource* Scene::createLightSource(const std::string& key, V3& pos, Colour& colour, float strength) {
 	// create the new light source
 	LightSource* light = new LightSource(pos, colour, strength);
 
@@ -24,7 +24,7 @@ LightSource* Scene::createLightSource(std::string& key, V3& pos, Colour& colour,
 	return light;
 }
 
-Entity* Scene::createEntity(std::string& key, Mesh& mesh, PhysicsData& physics) {
+Entity* Scene::createEntity(const std::string& key, Mesh& mesh, PhysicsData& physics) {
 	// create the new scene entity
 	Entity* entity = new Entity();
 
@@ -41,7 +41,7 @@ Entity* Scene::createEntity(std::string& key, Mesh& mesh, PhysicsData& physics) 
 	return entity;
 }
 
-LightSource* Scene::getLightSource(std::string& key) {
+LightSource* Scene::getLightSource(const std::string& key) {
 	// search for the matching key
 	for (int i = 0; i < lightSourceKeys.size(); ++i) {
 		if (lightSourceKeys[i] == key) {
@@ -53,7 +53,7 @@ LightSource* Scene::getLightSource(std::string& key) {
 	return nullptr;
 }
 
-Entity* Scene::getEntity(std::string& key) {
+Entity* Scene::getEntity(const std::string& key) {
 	// search for the matching key
 	for (int i = 0; i < entityKeys.size(); ++i) {
 		if (entityKeys[i] == key) {

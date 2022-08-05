@@ -8,7 +8,8 @@ struct Entity {
 	Mesh* mesh = nullptr;
 	PhysicsData* physics = nullptr;
 	
-	// TODO: Entity?
+	// mesh needs position, and so does physics
+
 
 	// constructor
 	Entity();
