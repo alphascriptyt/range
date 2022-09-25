@@ -16,7 +16,7 @@ public:
 	// mesh shape properties
 	std::vector<V3> vertices = {};
 	std::vector<std::vector<int>> faces = {};
-	std::vector<Colour*> colours = {};
+	std::vector<Colour> colours = {};
 
 	// mesh properties
 	V3 size = V3(1, 1, 1);

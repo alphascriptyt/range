@@ -59,14 +59,20 @@ private:
 	// lighting methods
 	float applyPointLighting(V3& v1, V3& v2, V3& v3, LightSource& light);
 	void applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour);
+
+
+	float calculateDiffusePart(V3& v, V3& n, V3& light_pos, float a, float b);
+	void getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3);
 	
 	// other 3D methods
 	void drawLine3D(V3& v1, V3& direction, float length);
 
 	// internal 2D primitive helper methods
-	void drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill = true); // calls other drawing functions
-	void drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill = true); // calls other drawing functions
-
+	//void drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill = true); // calls other drawing functions
+	//void drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill = true); // calls other drawing functions
+	void drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3, bool fill = true); // calls other drawing functions
+	void drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3, bool fill = true); // calls other drawing functions
+	
 public:
 	// initialization
 	SDL_Window* window = nullptr;		// SDL window 
@@ -82,13 +88,16 @@ public:
 	void cleanup();								// cleanup all renderer resources and SDL instances
 
 	// 2D primitive drawing
-	void drawScanLine(int x1, int x2, int y, int colour, float z1 = -1, float z2 = -1, bool fill = true); // basic line drawing for triangle methods with depth testing
+	void drawScanLine(int x1, int x2, int y, Colour& colour_v1, Colour& colour_v2, float z1 = -1, float z2 = -1, bool fill = true); // basic line drawing for triangle methods with depth testing
 	void drawRectangle(int x1, int y1, int x2, int y2, int colour);
-	void drawTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill = true); // calls other drawing functions - TODO: should take in corresponding colours for each vertex?
+	//void drawTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill = true); // calls other drawing functions - TODO: should take in corresponding colours for each vertex?
+	void drawTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3, bool fill = true); // calls other drawing functions - TODO: should take in corresponding colours for each vertex?
 	void setBackgroundColour(int colour = 0); // fill background with colour (default = black)
 
 	void drawNormal(V3& origin, V3& normal);
 
 	// text drawing methods
 	void renderText(char* text, Colour& colour, int x, int y);
+
+	bool temp = false;
 };

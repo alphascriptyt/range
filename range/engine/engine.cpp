@@ -16,7 +16,6 @@ void Engine::onStartup() {
 }
 
 void Engine::onUpdate(float dt) {
-
 }
 
 bool Engine::setup(const std::string& window_name, int w, int h) {
@@ -203,12 +202,6 @@ void Engine::loop() {
 		
 		// handle the next event
 		handleEvents(dt);
-
-		//std::string name = "player";
-		//Entity* player = Scene::scenes[0]->getEntity(name);
-		//player->physics->position = camera.physics.position + camera.direction + V3(0, -0.5, 4);
-		//player->mesh->yaw = -camera.yaw;
-
 		
 		// calculate delta time for time based movement		
 		dt = getDeltaTime(current_ticks, last_ticks);
@@ -230,7 +223,7 @@ void Engine::loop() {
 			// reset the timer
 			frame_timer.reset();
 
-			Scene::scenes[0]->getLightSource("viewpoint")->colour = Colour((rand() % 255), (rand() % 255), (rand() % 255));
+			//Scene::scenes[0]->getLightSource("viewpoint")->colour = Colour((rand() % 255), (rand() % 255), (rand() % 255));
 		}
 
 		renderer.renderText((char*)std::to_string(fps).c_str(), COLOUR::RED, 50, 50);

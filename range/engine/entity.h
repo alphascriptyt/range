@@ -13,4 +13,11 @@ struct Entity {
 
 	// constructor
 	Entity();
+
+	// methods
+	// events to override
+	virtual void onStartup();
+	virtual void onUpdate(float dt);
+
+	void update(float dt);
 };

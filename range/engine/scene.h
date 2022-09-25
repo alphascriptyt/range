@@ -21,6 +21,7 @@ public:
 	// methods for adding to scene
 	LightSource* createLightSource(const std::string& key, V3& pos, Colour& colour, float strength);
 	Entity* createEntity(const std::string& key, Mesh& mesh, PhysicsData& physics);
+	void addEntity(const std::string& key, Entity& entity);
 
 	// methods for getting scene contents
 	LightSource* getLightSource(const std::string& key);

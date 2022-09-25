@@ -107,7 +107,7 @@ bool Renderer::testAndSetDepth(int pos, float z) {
 }
 
 // 2D primitive drawing 
-void Renderer::drawScanLine(int x1, int x2, int y, int colour, float z1, float z2, bool fill) {
+void Renderer::drawScanLine(int x1, int x2, int y, Colour& colour_v1, Colour& colour_v2, float z1, float z2, bool fill) {
 	// if y is off screen or y is below screen, ignore
 	if (y > (WN_HEIGHT - 1) || y < 0) { return; }
 
@@ -136,26 +136,33 @@ void Renderer::drawScanLine(int x1, int x2, int y, int colour, float z1, float z
 
 	// fill line in array
 	if (fill) {
+		// calculate depth increment
 		float z_increment = (z2 - z1) / ((float)x2 - x1);
-		for (; x1 < x2; ++x1) {
-			// increment z1
-			z1 += z_increment;
 
+		// calculate colour increment
+		Colour colour_step = (colour_v2 - colour_v1) / (float)(x2 - x1);
+		Colour colour = colour_v1;
+
+		for (; x1 < x2; ++x1) {
 			// perform depth testing for pixel
 			if (testAndSetDepth(x1, z1)) {
-				pixelBuffer[x1] = colour;
+				pixelBuffer[x1] = colour.toInt();
 			}
+
+			// increment depth and colour
+			z1 += z_increment;
+			colour += colour_step;
 		}
 	}
 	// just draw the first and last pixel
 	else {
 		// perform depth testing for x1 and x2
 		if (testAndSetDepth(x1, z1)) {
-			pixelBuffer[x1] = colour;
+			pixelBuffer[x1] = colour_v1.toInt();;
 		}
 
 		if (testAndSetDepth(x2, z2)) {
-			pixelBuffer[x2] = colour;
+			pixelBuffer[x2] = colour_v2.toInt();
 		}
 	}
 }
@@ -185,12 +192,12 @@ void Renderer::drawRectangle(int x1, int y1, int x2, int y2, int colour) {
 
 }
 
-void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill) {
-	// calculate dx/dy for each Triangle3D side
+void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3, bool fill) {
+	// calculate dx/dy for each triangle side
 	float m1 = (v2.x - v1.x) / (v2.y - v1.y);
 	float m2 = (v3.x - v1.x) / (v3.y - v1.y);
 
-	// calculate dz/dy for each Triangle3D side
+	// calculate dz/dy for each triangle side
 	float mz1 = (v2.w - v1.w) / (v2.y - v1.y);
 	float mz2 = (v3.w - v1.w) / (v3.y - v1.y);
 
@@ -201,10 +208,19 @@ void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, int colour, bool f
 	float start_z = v1.w;
 	float end_z = v1.w;
 
+	// calculate colour gradients for each triangle side
+	Colour mc1 = (colour_v2 - colour_v1) / (v2.y - v1.y);
+	Colour mc2 = (colour_v3 - colour_v1) / (v3.y - v1.y);
+
+	// calculate colours for start and end of lines
+	Colour start_colour = colour_v1;
+	Colour end_colour = colour_v1;
+
 	// step through y to calculate start and end of scanline
 	for (int y = v1.y; y <= v2.y; ++y) {
 		// draw the scanline
-		drawScanLine(start_x, end_x, y, colour, start_z, end_z, fill);
+		//drawScanLine(start_x, end_x, y, colour, start_z, end_z, fill);
+		drawScanLine(start_x, end_x, y, start_colour, end_colour, start_z, end_z, fill);
 
 		// for each increment of y, step through x by dx/dy
 		start_x += m1;
@@ -213,10 +229,14 @@ void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, int colour, bool f
 		// step through z by dz/dy
 		start_z += mz1;
 		end_z += mz2;
+
+		// step through colour by dc/dy
+		start_colour += mc1;
+		end_colour += mc2;
 	}
 }
 
-void Renderer::drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill) {
+void Renderer::drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3, bool fill) {
 	// calculate dx/dy for each Triangle3D side
 	float m1 = (v3.x - v1.x) / (v3.y - v1.y);
 	float m2 = (v3.x - v2.x) / (v3.y - v2.y);
@@ -232,10 +252,19 @@ void Renderer::drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill
 	float start_z = v3.w;
 	float end_z = v3.w;
 
+	// calculate colour gradients for each triangle side
+	Colour mc1 = (colour_v3 - colour_v1) / (v3.y - v1.y);
+	Colour mc2 = (colour_v3 - colour_v2) / (v3.y - v2.y);
+
+	// calculate colours for start and end of lines
+	Colour start_colour = colour_v3;
+	Colour end_colour = colour_v3;
+
 	// step through y to calculate start and end of scanline
 	for (int y = v3.y; y > v1.y; y--) {
 		// draw the scanline
-		drawScanLine(start_x, end_x, y, colour, start_z, end_z, fill);
+		//drawScanLine(start_x, end_x, y, colour, start_z, end_z, fill);
+		drawScanLine(start_x, end_x, y, start_colour, end_colour, start_z, end_z, fill);
 
 		// for each decrement of y, step through x by dx/dy
 		start_x -= m1;
@@ -243,18 +272,31 @@ void Renderer::drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill
 
 		start_z -= mz1;
 		end_z -= mz2;
+
+		// step through z by dz/dy
+		start_z += mz1;
+		end_z += mz2;
+
+		// step through colour by dc/dy
+		start_colour -= mc1;
+		end_colour -= mc2;
 	}
 }
 
-void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill) {
+void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3, bool fill) {
 	// sort vertices in ascending order
-	if (v1.y > v2.y) { std::swap(v1, v2); } // ensure v2 is bigger than v1
-	if (v1.y > v3.y) { std::swap(v1, v3); } // ensure v3 is bigger than v1
-	if (v2.y > v3.y) { std::swap(v2, v3); } // ensure v3 is bigger than v2
+	if (v1.y > v2.y) { std::swap(v1, v2); std::swap(colour_v1, colour_v2); } // ensure v2 is bigger than v1
+	if (v1.y > v3.y) { std::swap(v1, v3); std::swap(colour_v1, colour_v3); } // ensure v3 is bigger than v1
+	if (v2.y > v3.y) { std::swap(v2, v3); std::swap(colour_v2, colour_v3); } // ensure v3 is bigger than v2
+	//if (v1.y > v2.y) { std::swap(v1, v2); } // ensure v2 is bigger than v1
+	//if (v1.y > v3.y) { std::swap(v1, v3); } // ensure v3 is bigger than v1
+	//if (v2.y > v3.y) { std::swap(v2, v3); } // ensure v3 is bigger than v2
+
+
 
 	// check if Triangle3D already has a flat top/bottom 
-	if (v1.y == v2.y) { drawFlatTopTriangle(v1, v2, v3, colour, fill); return; }
-	if (v2.y == v3.y) { drawFlatBottomTriangle(v1, v2, v3, colour, fill); return; }
+	if (v1.y == v2.y) { drawFlatTopTriangle(v1, v2, v3, colour_v1, colour_v2, colour_v3, fill); return; }
+	if (v2.y == v3.y) { drawFlatBottomTriangle(v1, v2, v3, colour_v1, colour_v2, colour_v3, fill); return; }
 
 	// calculate v4's x (opposite side from v2)
 	float x = v1.x + ((float)(v2.y - v1.y) / (float)(v3.y - v1.y)) * (v3.x - v1.x); // lerp for x
@@ -264,10 +306,21 @@ void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill) {
 	float w = v1.w + ((x - v1.x) * mz);			// linear interpolate to get v4's depth
 
 	V2 v4(x, v2.y, w);
-	
+
+	// get v4's colour
+	Colour mc = (colour_v3 - colour_v1) / (v3.y - v1.y);
+	Colour colour_v4 = colour_v1 + (mc * (v3.y - v4.y)); // lerp for colour
+	//colour_v4.print();
+	// colour = (colour_gradient * x) + c
+
+	// maybe i just need to use barycentric coordinates, for depth too, might be more efficient.s
+
 	// draw split Triangle3Ds
-	drawFlatBottomTriangle(v1, v2, v4, colour, fill);
-	drawFlatTopTriangle(v2, v4, v3, colour, fill);
+	//drawFlatBottomTriangle(v1, v2, v4, colour_v1, colour_v2, colour_v3, fill);
+	//drawFlatTopTriangle(v2, v4, v3, colour_v1, colour_v2, colour_v3, fill);
+
+	drawFlatBottomTriangle(v1, v2, v4, colour_v1, colour_v2, colour_v4, fill);
+	drawFlatTopTriangle(v2, v4, v3, colour_v2, colour_v4, colour_v3, fill);
 }
 
 // text rendering
@@ -435,10 +488,8 @@ float Renderer::applyPointLighting(V3& v1, V3& v2, V3& v3, LightSource& light) {
 	V3 line1 = v2 - v1;
 	V3 line2 = v3 - v1;
 
-	// calculate the normal between the lines (the direction the line is facing)
+	// calculate the face normal
 	V3 normal = vectorCrossProduct(line1, line2);
-
-	// normalize the normal as its a direction
 	normal.normalize();
 
 	// convert the light to camera space
@@ -452,30 +503,52 @@ float Renderer::applyPointLighting(V3& v1, V3& v2, V3& v3, LightSource& light) {
 
 	// create vertex in the middle to get average diffuse factor TODO: SHOULD CALCULATE FOR EACH VERTEX AND LERP THEM?
 	V3 v4 = (v1 + v2 + v3) / 3.0f;
-
+	
+	//v4 = v1;
 	// calculate the direction of the light to the vertex
 	V3 light_direction = L - v4;
 	float light_distance = light_direction.size();
 	light_direction.normalize();
 
+	// if we don't normalize we are essentially taking the distance into equation?
+
+	// ISSUE:
+	// i think the issue is that when we get so close to the y coordinate, normalizing makes the x and z huge compared to y
+	// this makes it seem like the normals go in the wrong direction.
+	// do we need to do per pixel somehow? i'd rather not, but not sure how else
+
 	// coordinates get flipped so we must invert the light direction
 	light_direction *= -1;
 
 	// calculate how much the vertex is lit
-	float diffuse_factor = vectorDotProduct(light_direction, normal);
-	//std::cout << diffuse_factor << std::endl;
+	
+	float diffuse_factor = vectorDotProduct(light_direction, normal); // diffuse factor gets bigger the further away???
+	
+	//std::cout << "light_dir "; light_direction.print();
+	//std::cout << "normal "; normal.print();
+	
 	// TODO: diffuse factor is extremely low when close
+	//  lighting messes up close up.
 
 	// determine if the face is lit by the lightsource
+	
 	if (diffuse_factor < 0.0f) {
+		//std::cout << abs(diffuse_factor) << std::endl;
+		//diffuse_factor = std::min(abs(diffuse_factor), 1.0f);
+
 		// calculate the light attenuation
 		float a = 0.1f / light.strength;
 		float b = 0.01f / light.strength;
 
+		// attenuation is correct
 		float attenuation = 1.0f / (1.0f + (a * light_distance) + (b * light_distance * light_distance));
+		
+		//std::cout << light_distance << " " << attenuation << " " << diffuse_factor << " " << diffuse_factor * attenuation << std::endl;
 		
 		return abs(diffuse_factor * attenuation);
 	}
+	
+	// facing the wrong way?
 	return 0.0f;
 }
 
@@ -487,7 +560,13 @@ void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 	LightSource::sources[0]->position = camera->physics.position;
 	
 	// calculate the material colour parts 
-	Colour face_colour(0, 0, 0);
+	Colour diffuse_part(0, 0, 0);
+
+	Colour ambient_part = COLOUR::WHITE;
+	float ambient_level = 0.1f;
+	ambient_part.r *= ambient_level;
+	ambient_part.g *= ambient_level;
+	ambient_part.b *= ambient_level;
 
 	// loop through each lightsource
 	for (int l = 0; l < LightSource::sources.size(); ++l) {
@@ -500,20 +579,123 @@ void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 			float dp = applyPointLighting(v1, v2, v3, *light);
 
 			// add to the colour
-			face_colour.r += dp * light->colour.r * base_colour.r;
-			face_colour.g += dp * light->colour.g * base_colour.g;
-			face_colour.b += dp * light->colour.b * base_colour.b;
+			diffuse_part.r += dp * light->colour.r;
+			diffuse_part.g += dp * light->colour.g;
+			diffuse_part.b += dp * light->colour.b;
 		}
 	}
 
-	// scale the colour
-	face_colour.r /= 255.0f;
-	face_colour.g /= 255.0f;
-	face_colour.b /= 255.0f;
+	// calculate the resultant colour off the face
+	Colour face_colour(0, 0, 0);
 
+	face_colour.r = (diffuse_part.r + ambient_part.r) * base_colour.r;
+	face_colour.g = (diffuse_part.g + ambient_part.g) * base_colour.g;
+	face_colour.b = (diffuse_part.b + ambient_part.b) * base_colour.b;
+	
 	// set the colour of the mesh
 	base_colour = face_colour;
-} 
+}
+
+float Renderer::calculateDiffusePart(V3& v, V3& n, V3& light_pos, float a, float b) {
+	// calculate the direction of the light to the vertex
+	V3 light_direction = light_pos - v;
+	float light_distance = light_direction.size();
+	light_direction.normalize();
+
+	// coordinates get flipped so we must invert the light direction
+	//light_direction *= -1;
+
+	// calculate how much the vertex is lit
+	float diffuse_factor = vectorDotProduct(light_direction, n); // diffuse factor gets bigger the further away???
+	diffuse_factor = std::max(0.0f, diffuse_factor);
+	float dp = 0.0f;
+
+	// determine if the vertex is lit by the lightsource
+	
+	// attenuation is correct
+	float attenuation = 1.0f / (1.0f + (a * light_distance) + (b * light_distance * light_distance));
+	dp = abs(diffuse_factor * attenuation);
+
+	return dp;
+}
+
+void Renderer::getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3) {
+	// little hack for viewpoint lighting, set the first
+	// lightsource's position to the camera
+	LightSource::sources[0]->position = camera->physics.position;
+
+	// calculate the material colour parts 
+	Colour diffuse_part_v1(0, 0, 0);
+	Colour diffuse_part_v2(0, 0, 0);
+	Colour diffuse_part_v3(0, 0, 0);
+
+	Colour ambient_part = COLOUR::WHITE;
+	float ambient_level = 0.1f;
+	ambient_part.r *= ambient_level;
+	ambient_part.g *= ambient_level;
+	ambient_part.b *= ambient_level;
+
+	// calculate the lines between vertices
+	V3 line1 = v2 - v1;
+	V3 line2 = v3 - v1;
+
+	// calculate the face normal
+	V3 normal = vectorCrossProduct(line1, line2);
+	normal.normalize();
+
+	// loop through each lightsource
+	for (int l = 0; l < LightSource::sources.size(); ++l) {
+		// get the pointer to the lightsource
+		LightSource* light = LightSource::sources[l];
+
+		// only calculate if light enabled
+		if (light->enabled) {
+			// convert the light to camera space
+			V3 L = light->position;
+
+			// apply view transform
+			viewTransform(L);
+
+			// apply camera rotation
+			rotateV3(L, camera->pitch, camera->yaw);
+
+			// calculate the light attenuation parameters
+			float a = 0.1f / light->strength;
+			float b = 0.01f / light->strength;
+
+			float dp = calculateDiffusePart(v1, normal, L, a, b);
+
+			// add to the colour
+			diffuse_part_v1.r += dp * light->colour.r;
+			diffuse_part_v1.g += dp * light->colour.g;
+			diffuse_part_v1.b += dp * light->colour.b;
+
+			dp = calculateDiffusePart(v2, normal, L, a, b);
+
+			// add to the colour
+			diffuse_part_v2.r += dp * light->colour.r;
+			diffuse_part_v2.g += dp * light->colour.g;
+			diffuse_part_v2.b += dp * light->colour.b;
+
+			dp = calculateDiffusePart(v3, normal, L, a, b);
+
+			// add to the colour
+			diffuse_part_v3.r += dp * light->colour.r;
+			diffuse_part_v3.g += dp * light->colour.g;
+			diffuse_part_v3.b += dp * light->colour.b;
+		}
+	}
+
+	// TODO: should each vertex have a colour initially?
+
+	// calculate the resultant colour off the face
+	colour_v1 = base_colour * (diffuse_part_v1 + ambient_part);
+	colour_v2 = base_colour * (diffuse_part_v2 + ambient_part);
+	colour_v3 = base_colour * (diffuse_part_v3 + ambient_part);
+	
+
+
+}
 
 void Renderer::renderScene(Scene* scene) {
 	// clear screen
@@ -526,6 +708,7 @@ void Renderer::renderScene(Scene* scene) {
 	// loop through each mesh
 	//for (int m = 0; m < Mesh::meshes.size(); ++m) {
 	for (int s = 0; s < scene->entities.size(); ++s) {
+		//break;
 		//Mesh* mesh = Mesh::meshes[m]; // get the pointer to the mesh
 		Entity* entity = scene->entities[s];
 		Mesh* mesh = entity->mesh; // get the pointer to the mesh
@@ -576,7 +759,7 @@ void Renderer::renderScene(Scene* scene) {
 			if (backfaceCull(v1, v2, v3)) {
 				// if the triangle is facing the camera, add it to the draw queue
 				Triangle3D tri(v1, v2, v3);
-				tri.colour = *mesh->colours[i];
+				tri.colour = mesh->colours[i];
 				triangles.push_back(tri);
 			}
 		}
@@ -597,15 +780,24 @@ void Renderer::renderScene(Scene* scene) {
 		// loop through clipped triangles
 		for (int t = 0; t < triangles.size(); ++t) {
 			// lighting
-			Colour colour = triangles[t].colour;
+			Colour base_colour = triangles[t].colour;
+			Colour colour_v1, colour_v2, colour_v3;
 
 			bool fill = true;
 			
 			// only apply lighting to filled meshes
 			if (fill && mesh->absorbsLight) {
 				// apply point lighting
-				applyLighting(triangles[t].v1, triangles[t].v2, triangles[t].v3, colour);
+				//applyLighting(triangles[t].v1, triangles[t].v2, triangles[t].v3, base_colour);
+
+				
+				getVertexColours(triangles[t].v1, triangles[t].v2, triangles[t].v3, base_colour, colour_v1, colour_v2, colour_v3);
 			}
+
+			// TODO: WE SHOULD BE LIGHTING BEFORE WE CLIP. THEN WE DON'T NEED TO CONVERT EVERYTHING BACK?? but that wouldn't work
+			// need to think about textures etc :/
+			// i don't  think im oging to be  using textures, so what i need to do is lerp for each colour of each
+			// vertex of the broken down triangles from the original triangles vertices. hopefully.....
 
 			// project vertices to 2D - Camera Space -> Screen Space
 			V2 pv1 = project(triangles[t].v1);
@@ -614,7 +806,8 @@ void Renderer::renderScene(Scene* scene) {
 
 			// this is painfully slow.
 			// clipping 2d triangles shouldn't be the solution as this would create more triangles to draw.
-			drawTriangle(pv1, pv2, pv3, colour.toInt(), fill); // very slow.
+			//drawTriangle(pv1, pv2, pv3, colour.toInt(), fill); // very slow.
+			drawTriangle(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3, fill);
 		}
 	}
 	
@@ -627,6 +820,65 @@ void Renderer::renderScene(Scene* scene) {
 
 	// draw rectangle
 	drawRectangle(center_x - thickness, center_y - thickness, center_x + thickness, center_y + thickness, COLOUR::WHITE.toInt());
+
+	/*
+	V2 v1 = V2(200, 500);
+	Colour v1_colour = COLOUR::RED;
+	V2 v2 = V2(600, 500);
+	Colour v2_colour = COLOUR::LIME;
+	V2 v3 = V2(400, 100);
+	Colour v3_colour = COLOUR::BLUE;
+
+	drawTriangle(v1, v2, v3, v1_colour, v2_colour, v3_colour);
+
+	V2 v4 = V2(700, 200);
+	Colour v4_colour = COLOUR::FUCHSIA;
+	V2 v5 = V2(900, 200);
+	Colour v5_colour = COLOUR::GOLD;
+	V2 v6 = V2(800, 600);
+	Colour v6_colour = COLOUR::TEAL;
+
+	drawTriangle(v4, v5, v6, v4_colour, v5_colour, v6_colour);
+	
+	V2 v7 = V2(10, 10);
+	Colour v7_colour = COLOUR::LIME;
+	V2 v8 = V2(500, 10);
+	Colour v8_colour = COLOUR::PURPLE;
+	V2 v9 = V2(10, 100);
+	Colour v9_colour = COLOUR::NAVY;
+
+	drawTriangle(v7, v8, v9, v7_colour, v8_colour, v9_colour);
+	*/
+
+	// TODO: i feel like the lerping colours is slightly wrong?
+	// essentially for a cube face there are two triangles with two shared vertices
+	// these vertices should have the same colour and therefore there shouldn't be a jagged line between the
+	// triangles? Yet there is? I'd say to look into this.
+
+	
+	V2 v1 = V2(50, 50);
+	V2 v2 = V2(50, 300);
+	V2 v3 = V2(300, 50);
+	V2 v4 = V2(300, 300);
+
+	Colour v1_colour = COLOUR::WHITE;
+	Colour v2_colour = Colour(0.5, 0.5, 1);
+	Colour v3_colour = Colour(0.5, 0.5, 1);
+	Colour v4_colour = Colour(0, 0, 1.0f);
+
+	drawTriangle(v1, v2, v3, v1_colour, v2_colour, v3_colour);
+	drawTriangle(v4, v2, v3, v4_colour, v2_colour, v3_colour); // essentially here v4_colour is set to v2?
+	//drawTriangle(v2, v3, v4, v2_colour, v3_colour, v4_colour); // WORKS
+
+	// ISSUE: this example only works when we insert the drawtriangle vertices in the correct order
+	// so we have found the issue, the vertices do not get given the correct colour.
+	// seems to happen for the flatbottomtriangle?
+	// maybe have a look into the lerping? Actually do some of the maths or have a look at another source.
+	// anyways, goodngiht for now, rest up, its okay, you'll get there <3
+	// im proud of you oliver.
+	
+
+
 }
 
 void Renderer::cleanup() {

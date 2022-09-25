@@ -41,6 +41,15 @@ Entity* Scene::createEntity(const std::string& key, Mesh& mesh, PhysicsData& phy
 	return entity;
 }
 
+void Scene::addEntity(const std::string& key, Entity& entity) {
+	// add the scene entity to the container
+	entities.push_back(&entity);
+
+	// add the scene entity key to the container
+	entityKeys.push_back(key);
+}
+
+
 LightSource* Scene::getLightSource(const std::string& key) {
 	// search for the matching key
 	for (int i = 0; i < lightSourceKeys.size(); ++i) {

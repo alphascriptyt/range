@@ -22,6 +22,8 @@ class Game : public Engine {
 	}
 }; 
 
+
+
 /* TODO: List of things to do after holiday!
 
 - Per vertex lighting (lerp colours per pixel)
@@ -52,20 +54,23 @@ int main(int argc, char** argv) {
 	// https://www.google.com/search?q=quake+map&tbm=isch&ved=2ahUKEwj3oKjr_uz4AhUJZ_EDHXREAagQ2-cCegQIABAA&oq=quake+map&gs_lcp=CgNpbWcQAzIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQyBggAEB4QBTIGCAAQHhAFMgYIABAeEAgyBggAEB4QCDIGCAAQHhAIMgYIABAeEAg6BAgAEBg6BAgjECc6CAgAEIAEELEDOgsIABCABBCxAxCDAToECAAQQzoECAAQAzoHCAAQsQMQQ1DjN1jTPWDpPmgAcAB4AIABvgGIAc8FkgEDOS4xmAEAoAEBqgELZ3dzLXdpei1pbWfAAQE&sclient=img&ei=UxPKYrerM4nOxc8P9IiFwAo&bih=658&biw=1523&rlz=1C1CHBF_en-GBGB914GB914#imgrc=WyNLVBQ3CtEPkM
 
 	
-	
+	/*
 	V3 mesh_pos(0, -3, 5);
 	V3 mesh_size(20, 0.5, 20);
-	Colour c(255, 20, 65);
+	Colour c = COLOUR::AQUA;
+
 	Mesh mesh_floor(Cube::vertices, Cube::faces, mesh_size, c);
+	
 	PhysicsData physics;
 	physics.position = mesh_pos;
 	scene.createEntity("floor", mesh_floor, physics);
-
-	V3 player_pos(0, 0, 0);
-	V3 player_size(0.25, 0.25, 0.25);
+	*/
+	
+	V3 player_pos(0, 0, 3);
+	V3 player_size(1, 1, 1);
 	Mesh player_mesh(Cube::vertices, Cube::faces, player_size, COLOUR::AQUA);
 	PhysicsData player_physics;
-	physics.position = player_pos;
+	player_physics.position = player_pos;
 	scene.createEntity("player", player_mesh, player_physics);
 
 	// start engine loop
