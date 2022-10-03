@@ -101,18 +101,18 @@ bool Renderer::testAndSetDepth(int pos, float z) {
 	if (depthBuffer[pos] > z) {
 		depthBuffer[pos] = z;
 
-		return true; // pixel should be drawn
+		return true;	// draw pixel
 	}
-	return false; // pixel shouldn't be drawn
+	return false;		// don't draw pixel
 }
 
 // 2D primitive drawing 
-void Renderer::drawScanLine(int x1, int x2, int y, Colour& colour_v1, Colour& colour_v2, float z1, float z2, bool fill) {
+void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colour_v2, float z1, float z2, bool fill) {
 	// if y is off screen or y is below screen, ignore
 	if (y > (WN_HEIGHT - 1) || y < 0) { return; }
 
 	// ensure coords go left to right
-	if (x1 > x2) { std::swap(x1, x2); }
+	if (x1 > x2) { std::swap(x1, x2); std::swap(colour_v1, colour_v2); }
 
 	// ignore line that starts past right side
 	if (x1 > WN_WIDTH - 1) { return; }
@@ -122,11 +122,13 @@ void Renderer::drawScanLine(int x1, int x2, int y, Colour& colour_v1, Colour& co
 
 	// clip point to left side
 	if (x1 < 0) {
+		colour_v1 = colour_v1 + ((colour_v2 - colour_v1) * ((-x1) / (float)(x2 - x1)));
 		x1 = 0;
 	}
 
 	// clip point to right side
 	if (x2 > WN_WIDTH - 1) {
+		colour_v2 = colour_v2 - ((colour_v2 - colour_v1) * ((x2 - WN_WIDTH) / (float)(x2 - x1)));
 		x2 = WN_WIDTH - 1;
 	}
 
@@ -193,6 +195,9 @@ void Renderer::drawRectangle(int x1, int y1, int x2, int y2, int colour) {
 }
 
 void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3, bool fill) {
+	// here we draw each scanline from the highest vertex v1
+	if (v2.x > v3.x) { std::swap(v2, v3); std::swap(colour_v2, colour_v3); } // ensure v3 is bigger than v2
+
 	// calculate dx/dy for each triangle side
 	float m1 = (v2.x - v1.x) / (v2.y - v1.y);
 	float m2 = (v3.x - v1.x) / (v3.y - v1.y);
@@ -201,10 +206,11 @@ void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1,
 	float mz1 = (v2.w - v1.w) / (v2.y - v1.y);
 	float mz2 = (v3.w - v1.w) / (v3.y - v1.y);
 
-	// calculate initial x coordinate
+	// set initial start and end x of line
 	float start_x = v1.x;
 	float end_x = v1.x;
 
+	// set initial start and end depth of line
 	float start_z = v1.w;
 	float end_z = v1.w;
 
@@ -237,18 +243,21 @@ void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1,
 }
 
 void Renderer::drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3, bool fill) {
-	// calculate dx/dy for each Triangle3D side
+	if (v1.x > v2.x) { std::swap(v1, v2); std::swap(colour_v1, colour_v2); } // ensure v3 is bigger than v2
+
+	// calculate dx/dy for each triangle side
 	float m1 = (v3.x - v1.x) / (v3.y - v1.y);
 	float m2 = (v3.x - v2.x) / (v3.y - v2.y);
 
-	// calculate dz/dy for each Triangle3D side
+	// calculate dz/dy for each triangle side
 	float mz1 = (v3.w - v1.w) / (v3.y - v1.y);
 	float mz2 = (v3.w - v2.w) / (v3.y - v2.y);
 
-	// calculate initial x coordinate
+	// set initial start and end x of line
 	float start_x = v3.x;
 	float end_x = v3.x;
 
+	// set initial start and end depth of line
 	float start_z = v3.w;
 	float end_z = v3.w;
 
@@ -288,13 +297,8 @@ void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& c
 	if (v1.y > v2.y) { std::swap(v1, v2); std::swap(colour_v1, colour_v2); } // ensure v2 is bigger than v1
 	if (v1.y > v3.y) { std::swap(v1, v3); std::swap(colour_v1, colour_v3); } // ensure v3 is bigger than v1
 	if (v2.y > v3.y) { std::swap(v2, v3); std::swap(colour_v2, colour_v3); } // ensure v3 is bigger than v2
-	//if (v1.y > v2.y) { std::swap(v1, v2); } // ensure v2 is bigger than v1
-	//if (v1.y > v3.y) { std::swap(v1, v3); } // ensure v3 is bigger than v1
-	//if (v2.y > v3.y) { std::swap(v2, v3); } // ensure v3 is bigger than v2
-
-
-
-	// check if Triangle3D already has a flat top/bottom 
+	
+	// check if triangles already has a flat top/bottom 
 	if (v1.y == v2.y) { drawFlatTopTriangle(v1, v2, v3, colour_v1, colour_v2, colour_v3, fill); return; }
 	if (v2.y == v3.y) { drawFlatBottomTriangle(v1, v2, v3, colour_v1, colour_v2, colour_v3, fill); return; }
 
@@ -308,17 +312,16 @@ void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& c
 	V2 v4(x, v2.y, w);
 
 	// get v4's colour
-	Colour mc = (colour_v3 - colour_v1) / (v3.y - v1.y);
-	Colour colour_v4 = colour_v1 + (mc * (v3.y - v4.y)); // lerp for colour
-	//colour_v4.print();
-	// colour = (colour_gradient * x) + c
+	Colour mc = (colour_v3 - colour_v1) / (v3.x - v1.x);	// get gradient of depths
+	Colour colour_v4 = colour_v1 + (mc * (x - v1.x));			// linear interpolate to get v4's depth
 
-	// maybe i just need to use barycentric coordinates, for depth too, might be more efficient.s
 
-	// draw split Triangle3Ds
+	//Colour colour_v4 = colour_v1 + ((colour_v3 - colour_v1) * ((v3.y - v1.y) / v2.y)); // lerp for colour // TODO: THIS APPEARS TO BE WRONG.
+	
 	//drawFlatBottomTriangle(v1, v2, v4, colour_v1, colour_v2, colour_v3, fill);
 	//drawFlatTopTriangle(v2, v4, v3, colour_v1, colour_v2, colour_v3, fill);
 
+	// draw split triangles
 	drawFlatBottomTriangle(v1, v2, v4, colour_v1, colour_v2, colour_v4, fill);
 	drawFlatTopTriangle(v2, v4, v3, colour_v2, colour_v4, colour_v3, fill);
 }
@@ -552,8 +555,6 @@ float Renderer::applyPointLighting(V3& v1, V3& v2, V3& v3, LightSource& light) {
 	return 0.0f;
 }
 
-// TODO: SHADE IN Triangle3D, LERP VERTEX COLOURS
-
 void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 	// little hack for viewpoint lighting, set the first
 	// lightsource's position to the camera
@@ -597,6 +598,9 @@ void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 }
 
 float Renderer::calculateDiffusePart(V3& v, V3& n, V3& light_pos, float a, float b) {
+	// TODO: 90% sure something is going wrong here, the error comes from looking away so is the camera direction messing us up?
+
+
 	// calculate the direction of the light to the vertex
 	V3 light_direction = light_pos - v;
 	float light_distance = light_direction.size();
@@ -653,9 +657,13 @@ void Renderer::getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Col
 			// convert the light to camera space
 			V3 L = light->position;
 
+			// TODO: I BELIEVE THE ERROR IS SOMEWHERE HERE? LOOKING AWAY ESSENTIALLY BREAKS IT?
+
+			// transform light position into camera space - is this necessary?
+
 			// apply view transform
 			viewTransform(L);
-
+			
 			// apply camera rotation
 			rotateV3(L, camera->pitch, camera->yaw);
 
@@ -685,8 +693,6 @@ void Renderer::getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Col
 			diffuse_part_v3.b += dp * light->colour.b;
 		}
 	}
-
-	// TODO: should each vertex have a colour initially?
 
 	// calculate the resultant colour off the face
 	colour_v1 = base_colour * (diffuse_part_v1 + ambient_part);
@@ -822,62 +828,36 @@ void Renderer::renderScene(Scene* scene) {
 	drawRectangle(center_x - thickness, center_y - thickness, center_x + thickness, center_y + thickness, COLOUR::WHITE.toInt());
 
 	/*
-	V2 v1 = V2(200, 500);
-	Colour v1_colour = COLOUR::RED;
-	V2 v2 = V2(600, 500);
-	Colour v2_colour = COLOUR::LIME;
-	V2 v3 = V2(400, 100);
-	Colour v3_colour = COLOUR::BLUE;
-
-	drawTriangle(v1, v2, v3, v1_colour, v2_colour, v3_colour);
-
-	V2 v4 = V2(700, 200);
-	Colour v4_colour = COLOUR::FUCHSIA;
-	V2 v5 = V2(900, 200);
-	Colour v5_colour = COLOUR::GOLD;
-	V2 v6 = V2(800, 600);
-	Colour v6_colour = COLOUR::TEAL;
-
-	drawTriangle(v4, v5, v6, v4_colour, v5_colour, v6_colour);
+	for (int i = 0; i < 50; ++i) {
+		Colour yellow(1,1,0);
+		Colour red(1,0,0);
+		drawScanLine(700, 1500, 500+i, yellow, red);
+		drawScanLine(700, 960, 600+i, yellow, red);
+		// TODO: problem found. - problem sorted?
+	}
+	*/
 	
-	V2 v7 = V2(10, 10);
-	Colour v7_colour = COLOUR::LIME;
-	V2 v8 = V2(500, 10);
-	Colour v8_colour = COLOUR::PURPLE;
-	V2 v9 = V2(10, 100);
-	Colour v9_colour = COLOUR::NAVY;
+	/*
+	int x, y;
+	SDL_GetMouseState(&x, &y);
+	V2 v1(300, 300);
+	V2 v2(600, 100);
+	V2 v3(x, y);
 
-	drawTriangle(v7, v8, v9, v7_colour, v8_colour, v9_colour);
+	Colour red(1, 0, 0);
+	Colour blue(0, 0, 1);
+	Colour green(0, 1, 0);
+
+	drawTriangle(v1, v2, v3, red, green, blue);
 	*/
 
-	// TODO: i feel like the lerping colours is slightly wrong?
-	// essentially for a cube face there are two triangles with two shared vertices
-	// these vertices should have the same colour and therefore there shouldn't be a jagged line between the
-	// triangles? Yet there is? I'd say to look into this.
+	// TODO:
+	// ISSUE: Looks like lerping code is fine now, however, some vertices seem to turn black?
+	// this only happens when looking certain directions so could this actually be the lighting now?
+	// I believe the lerping code is all fixed. Well done :)
+	// occasionally get like a zebra pattern so everything can't be working right
 
-	
-	V2 v1 = V2(50, 50);
-	V2 v2 = V2(50, 300);
-	V2 v3 = V2(300, 50);
-	V2 v4 = V2(300, 300);
-
-	Colour v1_colour = COLOUR::WHITE;
-	Colour v2_colour = Colour(0.5, 0.5, 1);
-	Colour v3_colour = Colour(0.5, 0.5, 1);
-	Colour v4_colour = Colour(0, 0, 1.0f);
-
-	drawTriangle(v1, v2, v3, v1_colour, v2_colour, v3_colour);
-	drawTriangle(v4, v2, v3, v4_colour, v2_colour, v3_colour); // essentially here v4_colour is set to v2?
-	//drawTriangle(v2, v3, v4, v2_colour, v3_colour, v4_colour); // WORKS
-
-	// ISSUE: this example only works when we insert the drawtriangle vertices in the correct order
-	// so we have found the issue, the vertices do not get given the correct colour.
-	// seems to happen for the flatbottomtriangle?
-	// maybe have a look into the lerping? Actually do some of the maths or have a look at another source.
-	// anyways, goodngiht for now, rest up, its okay, you'll get there <3
-	// im proud of you oliver.
-	
-
+	// when all vertices are the same colour it works fine, so this means the lerping code is wrong or the lighting code is wrong?
 
 }
 

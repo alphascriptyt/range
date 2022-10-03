@@ -88,7 +88,7 @@ public:
 	void cleanup();								// cleanup all renderer resources and SDL instances
 
 	// 2D primitive drawing
-	void drawScanLine(int x1, int x2, int y, Colour& colour_v1, Colour& colour_v2, float z1 = -1, float z2 = -1, bool fill = true); // basic line drawing for triangle methods with depth testing
+	void drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colour_v2, float z1 = -1, float z2 = -1, bool fill = true); // basic line drawing for triangle methods with depth testing
 	void drawRectangle(int x1, int y1, int x2, int y2, int colour);
 	//void drawTriangle(V2& v1, V2& v2, V2& v3, int colour, bool fill = true); // calls other drawing functions - TODO: should take in corresponding colours for each vertex?
 	void drawTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3, bool fill = true); // calls other drawing functions - TODO: should take in corresponding colours for each vertex?
