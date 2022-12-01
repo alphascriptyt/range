@@ -26,26 +26,26 @@ void Camera::move(const Uint8* keys, float dt) {
 	if (mode == NOCLIP) {
 		// moving forwards
 		if (keys[SDL_SCANCODE_W]) {
-			physics.position.x += dt * std::sin(yaw);
-			physics.position.z += dt * std::cos(yaw);
+			physics.position.x += dt * sin(yaw);
+			physics.position.z += dt * cos(yaw);
 		}
 
 		// moving backwards
 		if (keys[SDL_SCANCODE_S]) {
-			physics.position.x -= dt * std::sin(yaw);
-			physics.position.z -= dt * std::cos(yaw);
+			physics.position.x -= dt * sin(yaw);
+			physics.position.z -= dt * cos(yaw);
 		}
 
 		// moving right
 		if (keys[SDL_SCANCODE_D]) {
-			physics.position.x += dt * std::sin(yaw - HALF_PI);
-			physics.position.z += dt * std::cos(yaw - HALF_PI);
+			physics.position.x += dt * sin(yaw - HALF_PI);
+			physics.position.z += dt * cos(yaw - HALF_PI);
 		}
 
 		// moving left
 		if (keys[SDL_SCANCODE_A]) {
-			physics.position.x += dt * std::sin(yaw + HALF_PI);
-			physics.position.z += dt * std::cos(yaw + HALF_PI);
+			physics.position.x += dt * sin(yaw + HALF_PI);
+			physics.position.z += dt * cos(yaw + HALF_PI);
 		}
 
 		// moving down
@@ -61,8 +61,8 @@ void Camera::move(const Uint8* keys, float dt) {
 	else {
 		// moving forwards
 		if (keys[SDL_SCANCODE_W]) {
-			physics.velocity.x += dt * std::sin(yaw);
-			physics.velocity.z += dt * std::cos(yaw);
+			physics.velocity.x += dt * sin(yaw);
+			physics.velocity.z += dt * cos(yaw);
 
 			//position.x += dt * std::sin(yaw);
 			//position.z += dt * std::cos(yaw);
@@ -71,22 +71,22 @@ void Camera::move(const Uint8* keys, float dt) {
 
 		// moving backwards
 		if (keys[SDL_SCANCODE_S]) {
-			physics.velocity.x -= dt * std::sin(yaw);
-			physics.velocity.z -= dt * std::cos(yaw);
+			physics.velocity.x -= dt * sin(yaw);
+			physics.velocity.z -= dt * cos(yaw);
 			moved = true;
 		}
 
 		// moving right
 		if (keys[SDL_SCANCODE_D]) {
-			physics.velocity.x += dt * std::sin(yaw - HALF_PI);
-			physics.velocity.z += dt * std::cos(yaw - HALF_PI);
+			physics.velocity.x += dt * sin(yaw - HALF_PI);
+			physics.velocity.z += dt * cos(yaw - HALF_PI);
 			moved = true;
 		}
 
 		// moving left
 		if (keys[SDL_SCANCODE_A]) {
-			physics.velocity.x += dt * std::sin(yaw + HALF_PI);
-			physics.velocity.z += dt * std::cos(yaw + HALF_PI);
+			physics.velocity.x += dt * sin(yaw + HALF_PI);
+			physics.velocity.z += dt * cos(yaw + HALF_PI);
 			moved = true;
 		}
 

@@ -22,39 +22,15 @@ Colour::Colour(uint32_t _colour) {
 }
 
 // methods
-void Colour::clampComponents() {
-	// method for clamping R,G,B from 0-255
-
-	/*
-	// clamp r
-	if (r > 1.0f) { r = 1.0f; }
-	else if (r < 0) { r = 0; }
-
-	// clamp g
-	if (g > 1.0f) { g = 1.0f; }
-	else if (g < 0) { g = 0; }
-
-	// clamp b
-	if (b > 1.0f) { b = 1.0f; }
-	else if (b < 0) { b = 0; }
-	*/
-
-
-	r = std::max(0.0f, std::min(r, 1.0f));
-	g = std::max(0.0f, std::min(g, 1.0f));
-	b = std::max(0.0f, std::min(b, 1.0f));
-}
-
 uint32_t Colour::toInt() {
 	// return an integer representation of RGB
 
-	// clamp components to 1
-	clampComponents();
+	// TODO: Make video part on this, all I need to do is remove clamping the components and its twice as fast.
 	
 	// pack into XRGB format to match SDL surface and scale up to 0-255
-	return (static_cast<int>(r * 255) << 16) |
-			(static_cast<int>(g * 255) << 8) |
-			(static_cast<int>(b * 255));
+	return ((int)(r * 255) << 16) |
+		((int)(g * 255) << 8) |
+		((int)(b * 255));
 }
 
 void Colour::print() {
@@ -63,10 +39,7 @@ void Colour::print() {
 }
 
 SDL_Colour Colour::toSDL() {
-	// helper method to convert the colour to SDL (mainly for KISS_SDL use)
-
-	// clamp components to 1
-	clampComponents();
+	// helper method to convert the colour to SDL
 
 	// set the colour components and scale each up to 0-255
 	SDL_Colour c = { 0 };

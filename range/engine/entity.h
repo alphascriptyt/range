@@ -1,6 +1,6 @@
 #pragma once
 #include "physics/physics.h"
-#include "renderer/mesh.h"
+#include "graphics/mesh.h"
 
 // struct to store any physical entity in the scene
 struct Entity {

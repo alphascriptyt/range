@@ -1,6 +1,8 @@
+/*
 #include "vectormaths.h"
 
 #include <cmath>
+
 
 // vector functions
 V3 vectorCrossProduct(V3& v1, V3& v2) {
@@ -71,3 +73,18 @@ float findSignedDistance(V3& v, Plane& plane) {
 	// in the direction of the plane's normal
 	return vectorDotProduct(plane.normal, between);
 }
+
+bool isFrontFacing(V3& v1, V3& v2, V3& v3) {
+	// algorithm to check whether a face should be drawn
+	// or if it is on the backside of the shape and therefore
+	// cannot be seen
+	V3 vs1 = v2 - v1;
+	V3 vs2 = v3 - v1;
+	V3 n = vectorCrossProduct(vs1, vs2);
+
+	if (vectorDotProduct(v1, n) <= 0) {
+		return true;
+	}
+	return false;
+}
+*/

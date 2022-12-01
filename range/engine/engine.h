@@ -1,9 +1,11 @@
 #pragma once
 
 #include "sdl.h"
-#include "renderer/renderer.h"
+#include "graphics/renderer.h"
+#include "graphics/camera.h"
 #include "physics/physics.h"
-#include "renderer/camera.h"
+#include "ui/ui.h"
+
 
 #include <string>
 
@@ -29,6 +31,7 @@ public:
 	Renderer renderer;				// the current renderer instance
 	Camera camera;
 	Physics physics;
+	UI ui;
 
 	// engine events to override for actual game
 	virtual void onStartup();

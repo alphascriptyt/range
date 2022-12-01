@@ -11,22 +11,21 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="engine\engine.cpp" />
-    <ClCompile Include="engine\renderer\renderer.cpp" />
-    <ClCompile Include="engine\renderer\camera.cpp" />
+    <ClCompile Include="engine\graphics\renderer.cpp" />
+    <ClCompile Include="engine\graphics\camera.cpp" />
     <ClCompile Include="engine\math\mat4D.cpp" />
     <ClCompile Include="engine\math\vec2D.cpp" />
     <ClCompile Include="engine\math\vec3D.cpp" />
-    <ClCompile Include="engine\math\mathutils.cpp" />
-    <ClCompile Include="engine\renderer\colour.cpp" />
-    <ClCompile Include="engine\renderer\lightsource.cpp" />
-    <ClCompile Include="engine\renderer\triangle3D.cpp" />
-    <ClCompile Include="engine\renderer\mesh.cpp" />
-    <ClCompile Include="engine\renderer\presets.cpp" />
+    <ClCompile Include="engine\graphics\colour.cpp" />
+    <ClCompile Include="engine\graphics\lightsource.cpp" />
+    <ClCompile Include="engine\graphics\triangle3D.cpp" />
+    <ClCompile Include="engine\graphics\mesh.cpp" />
+    <ClCompile Include="engine\graphics\presets.cpp" />
     <ClCompile Include="engine\utils\utils.cpp" />
     <ClCompile Include="engine\utils\timer.cpp" />
     <ClCompile Include="engine\math\vectormaths.cpp" />
-    <ClCompile Include="engine\renderer\triangle2D.cpp" />
-    <ClCompile Include="engine\renderer\frustumculling.cpp" />
+    <ClCompile Include="engine\graphics\triangle2D.cpp" />
+    <ClCompile Include="engine\graphics\frustumculling.cpp" />
     <ClCompile Include="engine\math\plane.cpp" />
     <ClCompile Include="engine\physics\collision.cpp" />
     <ClCompile Include="engine\physics\AABB.cpp" />
@@ -34,25 +33,26 @@
     <ClCompile Include="engine\scene.cpp" />
     <ClCompile Include="engine\entity.cpp" />
     <ClCompile Include="engine\physics\physicsdata.cpp" />
+    <ClCompile Include="engine\ui\textrenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\engine.h" />
-    <ClInclude Include="engine\renderer\renderer.h" />
-    <ClInclude Include="engine\renderer\camera.h" />
+    <ClInclude Include="engine\graphics\renderer.h" />
+    <ClInclude Include="engine\graphics\camera.h" />
     <ClInclude Include="engine\math\mat4D.h" />
     <ClInclude Include="engine\math\vec2D.h" />
     <ClInclude Include="engine\math\vec3D.h" />
     <ClInclude Include="engine\math\mathutils.h" />
-    <ClInclude Include="engine\renderer\colour.h" />
-    <ClInclude Include="engine\renderer\lightsource.h" />
-    <ClInclude Include="engine\renderer\triangle3D.h" />
-    <ClInclude Include="engine\renderer\mesh.h" />
-    <ClInclude Include="engine\renderer\presets.h" />
+    <ClInclude Include="engine\graphics\colour.h" />
+    <ClInclude Include="engine\graphics\lightsource.h" />
+    <ClInclude Include="engine\graphics\triangle3D.h" />
+    <ClInclude Include="engine\graphics\mesh.h" />
+    <ClInclude Include="engine\graphics\presets.h" />
     <ClInclude Include="engine\utils\utils.h" />
     <ClInclude Include="engine\utils\timer.h" />
     <ClInclude Include="engine\math\vectormaths.h" />
-    <ClInclude Include="engine\renderer\triangle2D.h" />
-    <ClInclude Include="engine\renderer\frustumculling.h" />
+    <ClInclude Include="engine\graphics\triangle2D.h" />
+    <ClInclude Include="engine\graphics\frustumculling.h" />
     <ClInclude Include="engine\math\plane.h" />
     <ClInclude Include="engine\physics\collision.h" />
     <ClInclude Include="engine\physics\AABB.h" />
@@ -60,5 +60,9 @@
     <ClInclude Include="engine\scene.h" />
     <ClInclude Include="engine\entity.h" />
     <ClInclude Include="engine\physics\physicsdata.h" />
+    <ClInclude Include="engine\graphics\rendersurface.h" />
+    <ClInclude Include="engine\ui\ui.h" />
+    <ClInclude Include="engine\ui\uicomponent.h" />
+    <ClInclude Include="engine\ui\textrenderer.h" />
   </ItemGroup>
 </Project>

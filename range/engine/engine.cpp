@@ -1,13 +1,13 @@
 #pragma once
 
-#include <iostream>
-#include <fstream>
-
 #include "engine.h"
-#include "renderer/mesh.h"
-#include "renderer/presets.h"
+#include "graphics/mesh.h"
+#include "graphics/presets.h"
 #include "utils.h"
 #include "timer.h"
+
+#include <iostream>
+#include <fstream>
 
 Engine::Engine() {
 }
@@ -25,6 +25,11 @@ bool Engine::setup(const std::string& window_name, int w, int h) {
 	
 	// try intialize the renderer
 	if (!renderer.init(window_name)) {
+		return false;
+	}
+
+	// try initialize the UI
+	if (!ui.init()) {
 		return false;
 	}
 
@@ -153,9 +158,9 @@ void Engine::handleEvents(float& dt) {
 			renderer.camera->updateViewAngles(y, p);
 
 			// calculate the camera's looking direction
-			renderer.camera->direction.x = std::sin(renderer.camera->yaw);
-			renderer.camera->direction.y = -std::sin(renderer.camera->pitch);
-			renderer.camera->direction.z = std::cos(renderer.camera->yaw);
+			renderer.camera->direction.x = sin(renderer.camera->yaw);
+			renderer.camera->direction.y = -sin(renderer.camera->pitch);
+			renderer.camera->direction.z = cos(renderer.camera->yaw);
 			renderer.camera->direction.normalize();
 
 			break;
@@ -190,11 +195,20 @@ void Engine::loop() {
 	Timer frame_timer;
 
 	int fps = 0;
+	float frame_time = 0;
 	float dt = 0;
 
 	Uint64 current_ticks = SDL_GetTicks();
 	Uint64 last_ticks = current_ticks;
 
+	FontRenderer title_font("C://Users//olive//source//repos//range//range//engine//res//font//louisgeorgecafe_base.ttf", COLOUR::GOLD, 28);
+
+	KeyValueFontRenderer test_font_renderer("C://Users//olive//source//repos//range//range//engine//res//font//louisgeorgecafe_base.ttf", COLOUR::MAROON, 28);
+	//KeyValueFontRenderer test_font_renderer("C://Windows//Fonts//segoeui.ttf", COLOUR::MAROON, 18);
+
+	test_font_renderer.createKey("FPS: ");
+	test_font_renderer.createKey("Frame Time: ");
+	
 	// mainloop 
 	while (active) {
 		// get initial ticks
@@ -215,10 +229,11 @@ void Engine::loop() {
 		// render scene
 		renderer.renderScene(Scene::scenes[0]);
 		
-		// every 100 frames, display the fps
+		// every 200ms, display the fps
 		if (frame_timer.elapsed() > 200) {
 			// calculate performance
 			fps = getCurrentFPS(start_perf); // calculate delta time and fps
+			frame_time = frame_timer.elapsed() / 200.0f;
 
 			// reset the timer
 			frame_timer.reset();
@@ -226,7 +241,8 @@ void Engine::loop() {
 			//Scene::scenes[0]->getLightSource("viewpoint")->colour = Colour((rand() % 255), (rand() % 255), (rand() % 255));
 		}
 
-		renderer.renderText((char*)std::to_string(fps).c_str(), COLOUR::RED, 50, 50);
+		test_font_renderer.render(renderer.renderSurface, "FPS: ", std::to_string(fps), V2(50, 150));
+		test_font_renderer.render(renderer.renderSurface, "Frame Time: ", std::to_string(frame_time), V2(50, 180));
 
 		// render the buffer to the screen
 		SDL_UpdateWindowSurface(renderer.window);

@@ -5,8 +5,6 @@
 #include "sdl.h"
 
 class Colour {
-	void clampComponents();
-
 public:
 	// RGB components represented from 0-1
 	float r = 0;

@@ -16,5 +16,5 @@ public:
 	Colour colour = Colour(255, 255, 255);	
 
 	// constructor accepting a position, colour and strength
-	LightSource(V3& pos, Colour& c, float s);
+	LightSource(const V3& pos, const Colour& c, float s);
 };

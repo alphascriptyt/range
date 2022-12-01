@@ -6,7 +6,7 @@
 std::vector<LightSource*> LightSource::sources = {}; 
 
 // constructor
-LightSource::LightSource(V3& pos, Colour& c, float s) {
+LightSource::LightSource(const V3& pos, const Colour& c, float s) {
 	position = pos;
 	colour = c;
 	strength = s;

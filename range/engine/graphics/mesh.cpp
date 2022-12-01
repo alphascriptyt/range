@@ -9,7 +9,7 @@
 #include <iostream>
 
 // constructors
-Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, Colour colour) {
+Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, const Colour& colour) {
 	vertices = v;
 	faces = f;
 
@@ -17,7 +17,7 @@ Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, Colour colour) 
 	fillColour(colour);
 }
 
-Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, V3& s, Colour colour) {
+Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, const V3& s, const Colour& colour) {
 	vertices = v;
 	faces = f;
 	size = s;
@@ -26,7 +26,7 @@ Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, V3& s, Colour c
 	fillColour(colour);
 }
 
-Mesh::Mesh(std::string filename, Colour colour) {
+Mesh::Mesh(const std::string& filename, const Colour& colour) {
 	path = filename;
 
 	// try load the file
@@ -36,7 +36,7 @@ Mesh::Mesh(std::string filename, Colour colour) {
 	}
 }
 
-Mesh::Mesh(std::string filename, V3& s, Colour colour) {
+Mesh::Mesh(const std::string& filename, const V3& s, const Colour& colour) {
 	size = s;
 	path = filename;
 
@@ -48,7 +48,7 @@ Mesh::Mesh(std::string filename, V3& s, Colour colour) {
 }
 
 // methods
-bool Mesh::loadFromObjFile(std::string filename) {
+bool Mesh::loadFromObjFile(const std::string& filename) {
 	// open file
 	std::ifstream file(filename);
 
@@ -90,7 +90,7 @@ bool Mesh::loadFromObjFile(std::string filename) {
 	return true;
 }
 
-void Mesh::fillColour(Colour colour) {
+void Mesh::fillColour(const Colour& colour) {
 	// reset the face colours
 	colours = {};
 
@@ -113,7 +113,8 @@ void Mesh::move(const Uint8* keys, float dt, float camera_yaw) {
 	/*
 	// moving forwards
 	if (keys[SDL_SCANCODE_W]) {
-		pos.x += dt * std::sin(camera_yaw);
+		pos.x += dt * 
+		(camera_yaw);
 		pos.z += dt * std::cos(camera_yaw);
 	}
 

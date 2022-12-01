@@ -54,10 +54,13 @@ bool Renderer::init(const std::string& window_name) {
 		return false;
 	}
 
-	// check for failures creating the buffer
-	if (!initBuffers()) {
+	// check for failures creating the rendersurface
+	if (!renderSurface.init(window, WN_WIDTH, WN_HEIGHT, COLOUR::WHITE.toInt(), nearPlane)) {
 		return false;
 	}
+
+	// create projection matrix
+	createProjectionMatrix();
 	
 	// create the viewpoint lightsource (has to be created first so we can access it easily)
 	Scene::scenes[0]->createLightSource("viewpoint", camera->physics.position, COLOUR::WHITE, 10);
@@ -65,60 +68,15 @@ bool Renderer::init(const std::string& window_name) {
 	return true;
 }
 
-bool Renderer::initBuffers() {
-	// try get a pointer to the SDL window surface
-	windowSurface = SDL_GetWindowSurface(window);
-	
-	// check for errors
-	if (!windowSurface) {
-		printf("Failed to GetWindowSurface: %s\n", SDL_GetError());
-		return false;
-	}
-	
-	// get access to the pixel buffer 
-	pixelBuffer = (uint32_t*)windowSurface->pixels;
-
-	// find the buffer's pitch (number of bytes in one row of buffer)
-	bufferPitch = windowSurface->pitch;
-
-	// calculate the length of the buffer
-	bufferLength = windowSurface->w * windowSurface->h;
-	
-	// initialize depth buffer with z-far
-	for (int i = 0; i < bufferLength; ++i) {
-		depthBuffer.push_back(farPlane);
-	}
-
-	// create projection matrix
-	createProjectionMatrix();
-
-	return true;
-}
-
-// depth testing
-bool Renderer::testAndSetDepth(int pos, float z) {
-	// overwrite pixel in buffer if closer to camera
-	if (depthBuffer[pos] > z) {
-		depthBuffer[pos] = z;
-
-		return true;	// draw pixel
-	}
-	return false;		// don't draw pixel
-}
-
 // 2D primitive drawing 
 void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colour_v2, float z1, float z2, bool fill) {
+	// TODO: this method is extremely slow. About 70% execution time is spent here, obviously lots will be here but that's too much.
+
 	// if y is off screen or y is below screen, ignore
 	if (y > (WN_HEIGHT - 1) || y < 0) { return; }
 
-	// ensure coords go left to right
-	if (x1 > x2) { std::swap(x1, x2); std::swap(colour_v1, colour_v2); }
-
-	// ignore line that starts past right side
-	if (x1 > WN_WIDTH - 1) { return; }
-
-	// ignore point past left side
-	if (x2 < 0) { return; }
+	// ignore lines starting outside the x boundaries
+	if (x1 > WN_WIDTH - 1 || x2 < 0) { return; }
 
 	// clip point to left side
 	if (x1 < 0) {
@@ -135,37 +93,34 @@ void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colo
 	// scale x in terms of y
 	x1 += WN_WIDTH * y;
 	x2 += WN_WIDTH * y;
-
+	
 	// fill line in array
 	if (fill) {
+		// precalculate x2 - x1
+		float x2x1 = x2 - x1;
+
 		// calculate depth increment
-		float z_increment = (z2 - z1) / ((float)x2 - x1);
+		float z_increment = (z2 - z1) / x2x1;
 
 		// calculate colour increment
-		Colour colour_step = (colour_v2 - colour_v1) / (float)(x2 - x1);
+		Colour colour_step = (colour_v2 - colour_v1) / x2x1;
 		Colour colour = colour_v1;
 
-		for (; x1 < x2; ++x1) {
-			// perform depth testing for pixel
-			if (testAndSetDepth(x1, z1)) {
-				pixelBuffer[x1] = colour.toInt();
-			}
+		// render the scanline
+		for (; x1 <= x2; ++x1) {
+			// set the pixel via index
+			renderSurface.setIndex(x1, colour.toInt(), z1); // TODO: I think this is actually the slow part!! look into this.
 
 			// increment depth and colour
 			z1 += z_increment;
 			colour += colour_step;
 		}
+
 	}
 	// just draw the first and last pixel
 	else {
-		// perform depth testing for x1 and x2
-		if (testAndSetDepth(x1, z1)) {
-			pixelBuffer[x1] = colour_v1.toInt();;
-		}
-
-		if (testAndSetDepth(x2, z2)) {
-			pixelBuffer[x2] = colour_v2.toInt();
-		}
+		renderSurface.setIndex(x1, colour_v1.toInt(), z1);
+		renderSurface.setIndex(x2, colour_v2.toInt(), z2);
 	}
 }
 
@@ -188,7 +143,7 @@ void Renderer::drawRectangle(int x1, int y1, int x2, int y2, int colour) {
 
 		for (int x = start_x; x < end_x; ++x) {
 			// set the pixel
-			pixelBuffer[x] = colour;
+			renderSurface.setIndex(x, colour);
 		}
 	}
 
@@ -198,13 +153,24 @@ void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1,
 	// here we draw each scanline from the highest vertex v1
 	if (v2.x > v3.x) { std::swap(v2, v3); std::swap(colour_v2, colour_v3); } // ensure v3 is bigger than v2
 
+	v2.x = floor(v2.x);
+	v3.x = ceil(v3.x);
+
+	v1.y = floor(v1.y);
+	v2.y = ceil(v2.y);
+	v3.y = ceil(v3.y);
+
+	// precalculate vars
+	float y2_sub_y1 = (v2.y - v1.y);
+	float y3_sub_y1 = (v3.y - v1.y);
+
 	// calculate dx/dy for each triangle side
-	float m1 = (v2.x - v1.x) / (v2.y - v1.y);
-	float m2 = (v3.x - v1.x) / (v3.y - v1.y);
+	float m1 = (v2.x - v1.x) / y2_sub_y1;
+	float m2 = (v3.x - v1.x) / y3_sub_y1;
 
 	// calculate dz/dy for each triangle side
-	float mz1 = (v2.w - v1.w) / (v2.y - v1.y);
-	float mz2 = (v3.w - v1.w) / (v3.y - v1.y);
+	float mz1 = (v2.w - v1.w) / y2_sub_y1;
+	float mz2 = (v3.w - v1.w) / y3_sub_y1;
 
 	// set initial start and end x of line
 	float start_x = v1.x;
@@ -215,8 +181,8 @@ void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1,
 	float end_z = v1.w;
 
 	// calculate colour gradients for each triangle side
-	Colour mc1 = (colour_v2 - colour_v1) / (v2.y - v1.y);
-	Colour mc2 = (colour_v3 - colour_v1) / (v3.y - v1.y);
+	Colour mc1 = (colour_v2 - colour_v1) / y2_sub_y1;
+	Colour mc2 = (colour_v3 - colour_v1) / y3_sub_y1;
 
 	// calculate colours for start and end of lines
 	Colour start_colour = colour_v1;
@@ -245,13 +211,24 @@ void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1,
 void Renderer::drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3, bool fill) {
 	if (v1.x > v2.x) { std::swap(v1, v2); std::swap(colour_v1, colour_v2); } // ensure v3 is bigger than v2
 
+	v1.x = floor(v1.x);
+	v2.x = ceil(v2.x);
+
+	v1.y = floor(v1.y);
+	v2.y = floor(v2.y);
+	v3.y = ceil(v3.y);
+
+	// precalculate vars
+	float y3_sub_y1 = (v3.y - v1.y);
+	float y3_sub_y2 = (v3.y - v2.y);
+
 	// calculate dx/dy for each triangle side
-	float m1 = (v3.x - v1.x) / (v3.y - v1.y);
-	float m2 = (v3.x - v2.x) / (v3.y - v2.y);
+	float m1 = (v3.x - v1.x) / y3_sub_y1;
+	float m2 = (v3.x - v2.x) / y3_sub_y2;
 
 	// calculate dz/dy for each triangle side
-	float mz1 = (v3.w - v1.w) / (v3.y - v1.y);
-	float mz2 = (v3.w - v2.w) / (v3.y - v2.y);
+	float mz1 = (v3.w - v1.w) / y3_sub_y1;
+	float mz2 = (v3.w - v2.w) / y3_sub_y2;
 
 	// set initial start and end x of line
 	float start_x = v3.x;
@@ -262,29 +239,26 @@ void Renderer::drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Co
 	float end_z = v3.w;
 
 	// calculate colour gradients for each triangle side
-	Colour mc1 = (colour_v3 - colour_v1) / (v3.y - v1.y);
-	Colour mc2 = (colour_v3 - colour_v2) / (v3.y - v2.y);
+	Colour mc1 = (colour_v3 - colour_v1) / y3_sub_y1;
+	Colour mc2 = (colour_v3 - colour_v2) / y3_sub_y2;
 
 	// calculate colours for start and end of lines
 	Colour start_colour = colour_v3;
 	Colour end_colour = colour_v3;
 
 	// step through y to calculate start and end of scanline
-	for (int y = v3.y; y > v1.y; y--) {
+	for (int y = v3.y; y >= v1.y; y--) { // TESTING
 		// draw the scanline
 		//drawScanLine(start_x, end_x, y, colour, start_z, end_z, fill);
 		drawScanLine(start_x, end_x, y, start_colour, end_colour, start_z, end_z, fill);
 
-		// for each decrement of y, step through x by dx/dy
+		// step through x by dx/dy
 		start_x -= m1;
 		end_x -= m2;
 
+		// step through z by dz/dy
 		start_z -= mz1;
 		end_z -= mz2;
-
-		// step through z by dz/dy
-		start_z += mz1;
-		end_z += mz2;
 
 		// step through colour by dc/dy
 		start_colour -= mc1;
@@ -297,7 +271,7 @@ void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& c
 	if (v1.y > v2.y) { std::swap(v1, v2); std::swap(colour_v1, colour_v2); } // ensure v2 is bigger than v1
 	if (v1.y > v3.y) { std::swap(v1, v3); std::swap(colour_v1, colour_v3); } // ensure v3 is bigger than v1
 	if (v2.y > v3.y) { std::swap(v2, v3); std::swap(colour_v2, colour_v3); } // ensure v3 is bigger than v2
-	
+
 	// check if triangles already has a flat top/bottom 
 	if (v1.y == v2.y) { drawFlatTopTriangle(v1, v2, v3, colour_v1, colour_v2, colour_v3, fill); return; }
 	if (v2.y == v3.y) { drawFlatBottomTriangle(v1, v2, v3, colour_v1, colour_v2, colour_v3, fill); return; }
@@ -315,53 +289,15 @@ void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& c
 	Colour mc = (colour_v3 - colour_v1) / (v3.x - v1.x);	// get gradient of depths
 	Colour colour_v4 = colour_v1 + (mc * (x - v1.x));			// linear interpolate to get v4's depth
 
-
-	//Colour colour_v4 = colour_v1 + ((colour_v3 - colour_v1) * ((v3.y - v1.y) / v2.y)); // lerp for colour // TODO: THIS APPEARS TO BE WRONG.
-	
-	//drawFlatBottomTriangle(v1, v2, v4, colour_v1, colour_v2, colour_v3, fill);
-	//drawFlatTopTriangle(v2, v4, v3, colour_v1, colour_v2, colour_v3, fill);
-
 	// draw split triangles
 	drawFlatBottomTriangle(v1, v2, v4, colour_v1, colour_v2, colour_v4, fill);
 	drawFlatTopTriangle(v2, v4, v3, colour_v2, colour_v4, colour_v3, fill);
 }
 
-// text rendering
-void Renderer::renderText(char* text, Colour& colour, int x, int y) {
-	// create a surface from the text
-	SDL_Surface* text_surface = TTF_RenderText_Solid(font, text, colour.toSDL());
-
-	// set the text surface rect position
-	text_surface->clip_rect.x = x;
-	text_surface->clip_rect.y = y;
-
-	// blit the text surface to the window surface
-	SDL_BlitSurface(text_surface, NULL, windowSurface, &text_surface->clip_rect);
-	
-	// free the surface
-	if (text_surface) { SDL_FreeSurface(text_surface); }
-}
-
 // rendering methods
 void Renderer::viewTransform(V3& v) {
 	// translate scene with respect to camera
-	v.x -= camera->physics.position.x;
-	v.y -= camera->physics.position.y;
-	v.z -= camera->physics.position.z;
-}
-
-bool Renderer::backfaceCull(V3& v1, V3& v2, V3& v3) {
-	// algorithm to check whether a face should be drawn
-	// or if it is on the backside of the shape and therefore
-	// cannot be seen
-	V3 vs1 = v2 - v1;
-	V3 vs2 = v3 - v1;
-	V3 n = vectorCrossProduct(vs1, vs2);
-
-	if (vectorDotProduct(v1, n) <= 0) {
-		return true; // TODO: THIS IS A BIT MISLEADING, MAYBE CHANGE
-	}
-	return false;
+	v -= camera->physics.position;
 }
 
 V2 Renderer::project(V3& rotated) {
@@ -397,7 +333,7 @@ V2 Renderer::project(V3& rotated) {
 }
 
 void Renderer::setBackgroundColour(int colour) {
-	std::fill(pixelBuffer, pixelBuffer + bufferLength, colour);
+	//std::fill(pixelBuffer, pixelBuffer + bufferLength, colour);
 }
 
 void Renderer::drawNormal(V3& origin, V3& normal) {
@@ -462,8 +398,7 @@ void Renderer::drawLine3D(V3& v1, V3& direction, float length) {
 
 		if (p >= 0) {
 			if (visible) {
-				pixelBuffer[x + (y * WN_WIDTH)] = COLOUR::LIME.toInt();
-				depthBuffer[x + (y * WN_WIDTH)] = -1;
+				renderSurface.setPixel(x, y, COLOUR::LIME.toInt());
 			}
 
 			y = y + 1;
@@ -471,8 +406,8 @@ void Renderer::drawLine3D(V3& v1, V3& direction, float length) {
 		}
 		else {
 			if (visible) {
-				pixelBuffer[x + (y * WN_WIDTH)] = COLOUR::LIME.toInt();
-				depthBuffer[x + (y * WN_WIDTH)] = -1;
+				renderSurface.setPixel(x, y, COLOUR::LIME.toInt());
+
 			}
 
 			p = p + 2 * dy;
@@ -598,8 +533,8 @@ void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 }
 
 float Renderer::calculateDiffusePart(V3& v, V3& n, V3& light_pos, float a, float b) {
-	// TODO: 90% sure something is going wrong here, the error comes from looking away so is the camera direction messing us up?
-
+	// TODO: Feels like something is wrong, things far away are still fairly lit up. just depends
+	//		 where camera is facing.
 
 	// calculate the direction of the light to the vertex
 	V3 light_direction = light_pos - v;
@@ -657,8 +592,6 @@ void Renderer::getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Col
 			// convert the light to camera space
 			V3 L = light->position;
 
-			// TODO: I BELIEVE THE ERROR IS SOMEWHERE HERE? LOOKING AWAY ESSENTIALLY BREAKS IT?
-
 			// transform light position into camera space - is this necessary?
 
 			// apply view transform
@@ -704,11 +637,8 @@ void Renderer::getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Col
 }
 
 void Renderer::renderScene(Scene* scene) {
-	// clear screen
-	setBackgroundColour(COLOUR::WHITE.toInt());
-
-	// initialize depth buffer with z-far (maximum z distance)
-	std::fill(depthBuffer.begin(), depthBuffer.end(), farPlane); // TODO: is farPlane working right?
+	// clear render surface
+	renderSurface.clear(0x87CEEB, farPlane);
 
 	// actually render the scene
 	// loop through each mesh
@@ -762,7 +692,7 @@ void Renderer::renderScene(Scene* scene) {
 			rotateV3(v3, camera->pitch, camera->yaw);
 
 			// cull backfaces
-			if (backfaceCull(v1, v2, v3)) {
+			if (isFrontFacing(v1, v2, v3)) {
 				// if the triangle is facing the camera, add it to the draw queue
 				Triangle3D tri(v1, v2, v3);
 				tri.colour = mesh->colours[i];
@@ -794,16 +724,8 @@ void Renderer::renderScene(Scene* scene) {
 			// only apply lighting to filled meshes
 			if (fill && mesh->absorbsLight) {
 				// apply point lighting
-				//applyLighting(triangles[t].v1, triangles[t].v2, triangles[t].v3, base_colour);
-
-				
 				getVertexColours(triangles[t].v1, triangles[t].v2, triangles[t].v3, base_colour, colour_v1, colour_v2, colour_v3);
 			}
-
-			// TODO: WE SHOULD BE LIGHTING BEFORE WE CLIP. THEN WE DON'T NEED TO CONVERT EVERYTHING BACK?? but that wouldn't work
-			// need to think about textures etc :/
-			// i don't  think im oging to be  using textures, so what i need to do is lerp for each colour of each
-			// vertex of the broken down triangles from the original triangles vertices. hopefully.....
 
 			// project vertices to 2D - Camera Space -> Screen Space
 			V2 pv1 = project(triangles[t].v1);
@@ -812,8 +734,7 @@ void Renderer::renderScene(Scene* scene) {
 
 			// this is painfully slow.
 			// clipping 2d triangles shouldn't be the solution as this would create more triangles to draw.
-			//drawTriangle(pv1, pv2, pv3, colour.toInt(), fill); // very slow.
-			drawTriangle(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3, fill);
+			drawTriangle(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3, fill); // very slow.
 		}
 	}
 	
@@ -825,39 +746,22 @@ void Renderer::renderScene(Scene* scene) {
 	int thickness = 2;
 
 	// draw rectangle
-	drawRectangle(center_x - thickness, center_y - thickness, center_x + thickness, center_y + thickness, COLOUR::WHITE.toInt());
+	drawRectangle(center_x - thickness, center_y - thickness, center_x + thickness, center_y + thickness, 0xFFFFFFFF);
 
-	/*
-	for (int i = 0; i < 50; ++i) {
-		Colour yellow(1,1,0);
-		Colour red(1,0,0);
-		drawScanLine(700, 1500, 500+i, yellow, red);
-		drawScanLine(700, 960, 600+i, yellow, red);
-		// TODO: problem found. - problem sorted?
-	}
-	*/
-	
+	// testing
 	/*
 	int x, y;
 	SDL_GetMouseState(&x, &y);
-	V2 v1(300, 300);
-	V2 v2(600, 100);
-	V2 v3(x, y);
+	V2 pv1(x, y);
+	V2 pv2(200, 200);
+	V2 pv3(450, 225);
 
-	Colour red(1, 0, 0);
-	Colour blue(0, 0, 1);
-	Colour green(0, 1, 0);
-
-	drawTriangle(v1, v2, v3, red, green, blue);
+	Colour colour_v1(1.0f, 0.0f, 0.0f);
+	Colour colour_v2(0.0f, 1.0f, 0.0f);
+	Colour colour_v3(0.0f, 0.0f, 1.0f);
 	*/
+	//drawTriangle(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3, true);
 
-	// TODO:
-	// ISSUE: Looks like lerping code is fine now, however, some vertices seem to turn black?
-	// this only happens when looking certain directions so could this actually be the lighting now?
-	// I believe the lerping code is all fixed. Well done :)
-	// occasionally get like a zebra pattern so everything can't be working right
-
-	// when all vertices are the same colour it works fine, so this means the lerping code is wrong or the lighting code is wrong?
 
 }
 

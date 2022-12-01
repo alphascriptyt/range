@@ -5,7 +5,7 @@
 #include "collision.h"
 #include "AABB.h"
 #include "physicsdata.h"
-#include "../renderer/triangle3D.h"
+#include "../graphics/triangle3D.h"
 
 // This function solves the quadratic eqation "At^2 + Bt + C = 0" and is found in Kasper Fauerby's paper on collision detection and response
 bool getLowestRoot(float a, float b, float c, float maxR, float* root)

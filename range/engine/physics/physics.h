@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "vec3d.h"
-#include "../renderer/camera.h"
+#include "../graphics/camera.h"
 #include "../entity.h"
 
 /*

@@ -1,5 +1,5 @@
 #include "scene.h"
-#include "renderer/mesh.h"
+#include "graphics/mesh.h"
 
 // initialize static member container of pointers to scenes
 std::vector<Scene*> Scene::scenes = {};

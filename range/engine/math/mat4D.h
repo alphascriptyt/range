@@ -8,7 +8,7 @@ private:
 
 public:
 	// constructors
-	M4();								// default constructor
+	M4();
 
 	// methods
 	void setRow(int row, float x, float y, float z, float w);

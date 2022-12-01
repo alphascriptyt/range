@@ -1,5 +1,5 @@
 #pragma once
-#include "renderer/lightsource.h"
+#include "graphics/lightsource.h"
 #include "entity.h"
 
 // class to represent the current scene

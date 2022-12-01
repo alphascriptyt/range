@@ -1,6 +1,6 @@
 #pragma once
 #include "vec3d.h"
-#include "../renderer/mesh.h"
+#include "../graphics/mesh.h"
 
 #include <vector>
 
