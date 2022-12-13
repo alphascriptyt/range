@@ -19,6 +19,43 @@ class Game : public Engine {
 		if (keyboardState[SDL_SCANCODE_0]) {
 			std::cout << "0" << std::endl;
 		}
+
+		/*
+		Colour c1 = Colour(1, 0, 0);
+		Colour c2 = Colour(0, 1, 0);
+		Colour c3 = Colour(0, 0, 1);
+		V2 v1(0, 0);
+		V2 v2(1280, 0);
+		V2 v3(0, 720);
+		renderer.drawTriangle(v1, v2, v3, c1, c2, c3);
+		
+		
+		Colour c4 = COLOUR::PURPLE;
+		Colour c5 = COLOUR::GOLD;
+		Colour c6 = COLOUR::MAROON;
+		V2 v4(0, 720);
+		V2 v5(1280, 0);
+		V2 v6(1280, 720);
+		renderer.drawTriangle(v4, v5, v6, c4, c5, c6);
+		
+
+		*/
+		int x, y;
+		SDL_GetMouseState(&x, &y);
+		V2 pv1(x, y);
+		V2 pv2(200, 200);
+		V2 pv3(450, 225);
+
+		Colour colour_v1(1.0f, 0.0f, 0.0f);
+		Colour colour_v2(0.0f, 1.0f, 0.0f);
+		Colour colour_v3(0.0f, 0.0f, 1.0f);
+		
+		//renderer.drawTriangle(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3);
+		
+	//	renderer.drawLine(pv1, pv2, colour_v1);
+	//	renderer.drawLine(pv1, pv3, colour_v1);
+	//	renderer.drawLine(pv2, pv3, colour_v1);
+		
 	}
 }; 
 
@@ -32,17 +69,8 @@ TODO:
 - Fully fix line rendering glithces
 - Sort out line drawing glitches (random lines going too far and gap between triangles)
 - Setup some debugging tools like drawing normals and collision boxes + better wireframe
-
-*/
-
-/*
-Engine Restructure:
-
-Aims:
-- Make engine easier to work on
-- Don't overdo the OOP, move unnecessary parts out of classes (eg drawTriangle)
-- Make classes smaller and less forced, don't force it.
-
+- Some weird black thing going on when getting too close to cube?
+- When a line is drawing too shallow, we miss several pixels. this is causing the gaps? or are we missing out y coordinates?
 */
 
 int main(int argc, char** argv) {
@@ -58,7 +86,6 @@ int main(int argc, char** argv) {
 	
 	// keep engine loading of scenes so i can use 3denvcreator to make map?
 
-
 	// create this map?
 	// https://www.google.com/search?q=quake+map&tbm=isch&ved=2ahUKEwj3oKjr_uz4AhUJZ_EDHXREAagQ2-cCegQIABAA&oq=quake+map&gs_lcp=CgNpbWcQAzIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQyBggAEB4QBTIGCAAQHhAFMgYIABAeEAgyBggAEB4QCDIGCAAQHhAIMgYIABAeEAg6BAgAEBg6BAgjECc6CAgAEIAEELEDOgsIABCABBCxAxCDAToECAAQQzoECAAQAzoHCAAQsQMQQ1DjN1jTPWDpPmgAcAB4AIABvgGIAc8FkgEDOS4xmAEAoAEBqgELZ3dzLXdpei1pbWfAAQE&sclient=img&ei=UxPKYrerM4nOxc8P9IiFwAo&bih=658&biw=1523&rlz=1C1CHBF_en-GBGB914GB914#imgrc=WyNLVBQ3CtEPkM
 
@@ -67,7 +94,7 @@ int main(int argc, char** argv) {
 	// i want to take it out of renderer as I don't like it and move it to a 2d primitive file or something?
 	// or move it into triangl2d?
 
-
+	
 	
 	V3 mesh_pos(0, 5, 0);
 

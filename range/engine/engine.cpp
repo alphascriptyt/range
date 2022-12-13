@@ -221,19 +221,22 @@ void Engine::loop() {
 		dt = getDeltaTime(current_ticks, last_ticks);
 
 		// trigger the update event
-		onUpdate(dt);
+		//onUpdate(dt);
 
 		// perform physics
 		physics.process(camera, dt);
 
 		// render scene
 		renderer.renderScene(Scene::scenes[0]);
+
+		// trigger the update event
+		onUpdate(dt);
 		
 		// every 200ms, display the fps
 		if (frame_timer.elapsed() > 200) {
 			// calculate performance
 			fps = getCurrentFPS(start_perf); // calculate delta time and fps
-			frame_time = frame_timer.elapsed() / 200.0f;
+			frame_time = frame_timer.elapsed() / 201.0f;
 
 			// reset the timer
 			frame_timer.reset();
@@ -243,9 +246,11 @@ void Engine::loop() {
 
 		test_font_renderer.render(renderer.renderSurface, "FPS: ", std::to_string(fps), V2(50, 150));
 		test_font_renderer.render(renderer.renderSurface, "Frame Time: ", std::to_string(frame_time), V2(50, 180));
+		title_font.render(renderer.renderSurface, "Range", V2(450, 50));
+
 
 		// render the buffer to the screen
-		SDL_UpdateWindowSurface(renderer.window);
+		renderer.display();
 	}
 }
 

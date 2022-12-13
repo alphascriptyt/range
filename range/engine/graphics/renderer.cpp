@@ -68,59 +68,127 @@ bool Renderer::init(const std::string& window_name) {
 	return true;
 }
 
-// 2D primitive drawing 
-void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colour_v2, float z1, float z2, bool fill) {
-	// TODO: this method is extremely slow. About 70% execution time is spent here, obviously lots will be here but that's too much.
+// 2D primitive drawing
+void Renderer::drawLine(V2& v1, V2& v2, Colour colour) {
+	// CREDITS: https://github.com/joshb/linedrawing/blob/master/Rasterizer.cpp
+	// TODO: optimise this and write it more in my style.
 
+	int colour_int = colour.toInt();
+
+	float xdiff = (v2.x - v1.x);
+	float ydiff = (v2.y - v1.y);
+
+	if (fabs(xdiff) > fabs(ydiff)) {
+		float xmin, xmax;
+
+		// set xmin to the lower x value given
+		// and xmax to the higher value
+		if (v1.x < v2.x) {
+			xmin = v1.x;
+			xmax = v2.x;
+		}
+		else {
+			xmin = v2.x;
+			xmax = v1.x;
+		}
+
+		// draw line in terms of y slope
+		float slope = ydiff / xdiff;
+		for (float x = xmin; x <= xmax; x += 1.0f) {
+			float y = v1.y + ((x - v1.x) * slope);
+			
+			if (x >= 0 && x < WN_WIDTH && y >= 0 && y < WN_HEIGHT) renderSurface.setPixel(x, y, colour_int);
+		}
+	}
+	else {
+		float ymin, ymax;
+
+		// set ymin to the lower y value given
+		// and ymax to the higher value
+
+		if (v1.y < v2.y) {
+			ymin = v1.y;
+			ymax = v2.y;
+		}
+		else {
+			ymin = v2.y;
+			ymax = v1.y;
+		}
+
+		// draw line in terms of x slope
+		float slope = xdiff / ydiff;
+		for (float y = ymin; y <= ymax; y += 1.0f) {
+			float x = v1.x + ((y - v1.y) * slope);
+
+			if (x >= 0 && x < WN_WIDTH && y >= 0 && y < WN_HEIGHT) renderSurface.setPixel(x, y, colour_int);
+			
+		}
+	}
+}
+
+void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colour_v2, float z1, float z2) {
+	// TODO: this method is extremely slow. About 70% execution time is spent here, obviously lots will be here but that's too much.
+	
 	// if y is off screen or y is below screen, ignore
 	if (y > (WN_HEIGHT - 1) || y < 0) { return; }
 
 	// ignore lines starting outside the x boundaries
 	if (x1 > WN_WIDTH - 1 || x2 < 0) { return; }
-
+	
+	// precalculate x2 - x1
+	float x2x1 = x2 - x1;
+	Colour c2c1 = colour_v2 - colour_v1;
+	
 	// clip point to left side
 	if (x1 < 0) {
-		colour_v1 = colour_v1 + ((colour_v2 - colour_v1) * ((-x1) / (float)(x2 - x1)));
+		colour_v1 = colour_v1 + (c2c1 * ((-x1) / x2x1));
 		x1 = 0;
 	}
 
 	// clip point to right side
 	if (x2 > WN_WIDTH - 1) {
-		colour_v2 = colour_v2 - ((colour_v2 - colour_v1) * ((x2 - WN_WIDTH) / (float)(x2 - x1)));
+		colour_v2 = colour_v2 - (c2c1 * ((x2 - WN_WIDTH) / x2x1));
 		x2 = WN_WIDTH - 1;
 	}
-
+	
 	// scale x in terms of y
-	x1 += WN_WIDTH * y;
-	x2 += WN_WIDTH * y;
+	int row_offset = WN_WIDTH * y;
+	x1 += row_offset;
+	x2 += row_offset;
 	
 	// fill line in array
-	if (fill) {
-		// precalculate x2 - x1
-		float x2x1 = x2 - x1;
 
-		// calculate depth increment
-		float z_increment = (z2 - z1) / x2x1;
+	// calculate depth increment
+	float z_increment = (z2 - z1) / x2x1;
 
-		// calculate colour increment
-		Colour colour_step = (colour_v2 - colour_v1) / x2x1;
-		Colour colour = colour_v1;
+	// calculate colour increment
+	Colour colour_step = c2c1 / x2x1;
+	Colour colour = colour_v1;
 
-		// render the scanline
-		for (; x1 <= x2; ++x1) {
-			// set the pixel via index
-			renderSurface.setIndex(x1, colour.toInt(), z1); // TODO: I think this is actually the slow part!! look into this.
+	float r = colour.r * 255;
+	float g = colour.g * 255;
+	float b = colour.b * 255;
 
-			// increment depth and colour
-			z1 += z_increment;
-			colour += colour_step;
-		}
+	float r_step = colour_step.r * 255;
+	float g_step = colour_step.g * 255;
+	float b_step = colour_step.b * 255;
 
-	}
-	// just draw the first and last pixel
-	else {
-		renderSurface.setIndex(x1, colour_v1.toInt(), z1);
-		renderSurface.setIndex(x2, colour_v2.toInt(), z2);
+	// NOTE: converting to int every frame ruins fps.
+
+	// render the scanline
+	for (; x1 <= x2; ++x1) {
+		// set the pixel via index
+		//renderSurface.setIndex(x1, colour.toInt(), z1); // TODO: I think this is actually the slow part!! look into this.
+		renderSurface.setIndex(x1, ((int)(r) << 16) | ((int)(g) << 8) | ((int)(b)), z1); // TODO: I think this is actually the slow part!! look into this.
+		
+		//renderSurface.setIndex(x1, c + cs * x_percent, z1);
+		// increment depth and colour
+		z1 += z_increment;
+		//colour += colour_step;
+		r += r_step;
+		g += g_step;
+		b += b_step;
+
 	}
 }
 
@@ -149,16 +217,9 @@ void Renderer::drawRectangle(int x1, int y1, int x2, int y2, int colour) {
 
 }
 
-void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3, bool fill) {
+void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3) {
 	// here we draw each scanline from the highest vertex v1
 	if (v2.x > v3.x) { std::swap(v2, v3); std::swap(colour_v2, colour_v3); } // ensure v3 is bigger than v2
-
-	v2.x = floor(v2.x);
-	v3.x = ceil(v3.x);
-
-	v1.y = floor(v1.y);
-	v2.y = ceil(v2.y);
-	v3.y = ceil(v3.y);
 
 	// precalculate vars
 	float y2_sub_y1 = (v2.y - v1.y);
@@ -192,7 +253,7 @@ void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1,
 	for (int y = v1.y; y <= v2.y; ++y) {
 		// draw the scanline
 		//drawScanLine(start_x, end_x, y, colour, start_z, end_z, fill);
-		drawScanLine(start_x, end_x, y, start_colour, end_colour, start_z, end_z, fill);
+		drawScanLine(start_x - 0.5f, end_x + 0.5f, y, start_colour, end_colour, start_z, end_z);
 
 		// for each increment of y, step through x by dx/dy
 		start_x += m1;
@@ -208,15 +269,8 @@ void Renderer::drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1,
 	}
 }
 
-void Renderer::drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3, bool fill) {
+void Renderer::drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3) {
 	if (v1.x > v2.x) { std::swap(v1, v2); std::swap(colour_v1, colour_v2); } // ensure v3 is bigger than v2
-
-	v1.x = floor(v1.x);
-	v2.x = ceil(v2.x);
-
-	v1.y = floor(v1.y);
-	v2.y = floor(v2.y);
-	v3.y = ceil(v3.y);
 
 	// precalculate vars
 	float y3_sub_y1 = (v3.y - v1.y);
@@ -250,7 +304,7 @@ void Renderer::drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Co
 	for (int y = v3.y; y >= v1.y; y--) { // TESTING
 		// draw the scanline
 		//drawScanLine(start_x, end_x, y, colour, start_z, end_z, fill);
-		drawScanLine(start_x, end_x, y, start_colour, end_colour, start_z, end_z, fill);
+		drawScanLine(start_x - 0.5f, end_x + 0.5f, y, start_colour, end_colour, start_z, end_z);
 
 		// step through x by dx/dy
 		start_x -= m1;
@@ -266,15 +320,15 @@ void Renderer::drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Co
 	}
 }
 
-void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3, bool fill) {
+void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3) {
 	// sort vertices in ascending order
 	if (v1.y > v2.y) { std::swap(v1, v2); std::swap(colour_v1, colour_v2); } // ensure v2 is bigger than v1
 	if (v1.y > v3.y) { std::swap(v1, v3); std::swap(colour_v1, colour_v3); } // ensure v3 is bigger than v1
 	if (v2.y > v3.y) { std::swap(v2, v3); std::swap(colour_v2, colour_v3); } // ensure v3 is bigger than v2
 
 	// check if triangles already has a flat top/bottom 
-	if (v1.y == v2.y) { drawFlatTopTriangle(v1, v2, v3, colour_v1, colour_v2, colour_v3, fill); return; }
-	if (v2.y == v3.y) { drawFlatBottomTriangle(v1, v2, v3, colour_v1, colour_v2, colour_v3, fill); return; }
+	if (v1.y == v2.y) { drawFlatTopTriangle(v1, v2, v3, colour_v1, colour_v2, colour_v3); return; }
+	if (v2.y == v3.y) { drawFlatBottomTriangle(v1, v2, v3, colour_v1, colour_v2, colour_v3); return; }
 
 	// calculate v4's x (opposite side from v2)
 	float x = v1.x + ((float)(v2.y - v1.y) / (float)(v3.y - v1.y)) * (v3.x - v1.x); // lerp for x
@@ -290,8 +344,8 @@ void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& c
 	Colour colour_v4 = colour_v1 + (mc * (x - v1.x));			// linear interpolate to get v4's depth
 
 	// draw split triangles
-	drawFlatBottomTriangle(v1, v2, v4, colour_v1, colour_v2, colour_v4, fill);
-	drawFlatTopTriangle(v2, v4, v3, colour_v2, colour_v4, colour_v3, fill);
+	drawFlatBottomTriangle(v1, v2, v4, colour_v1, colour_v2, colour_v4);
+	drawFlatTopTriangle(v2, v4, v3, colour_v2, colour_v4, colour_v3);
 }
 
 // rendering methods
@@ -734,7 +788,11 @@ void Renderer::renderScene(Scene* scene) {
 
 			// this is painfully slow.
 			// clipping 2d triangles shouldn't be the solution as this would create more triangles to draw.
-			drawTriangle(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3, fill); // very slow.
+			drawTriangle(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3); // very slow.
+
+			drawLine(pv1, pv3, COLOUR::RED);
+			drawLine(pv1, pv2, COLOUR::RED);
+			drawLine(pv2, pv3, COLOUR::RED);
 		}
 	}
 	
@@ -762,7 +820,10 @@ void Renderer::renderScene(Scene* scene) {
 	*/
 	//drawTriangle(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3, true);
 
+}
 
+void Renderer::display() {
+	SDL_UpdateWindowSurface(window);
 }
 
 void Renderer::cleanup() {

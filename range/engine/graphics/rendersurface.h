@@ -4,6 +4,7 @@
 #include "SDL.h"
 #include "timer.h"
 class RenderSurface {
+public:
 	SDL_Window* window = nullptr;
 	std::vector<float> depthBuffer; // depth of pixels
 
@@ -12,7 +13,7 @@ class RenderSurface {
 		if (depthBuffer[i] > depth) {
 			depthBuffer[i] = depth;
 
-			return true;	// do draw pixel
+			return true;	// draw pixel
 		}
 		return false;		// don't draw pixel
 	}
@@ -83,5 +84,5 @@ public:
 		std::fill(depthBuffer.begin(), depthBuffer.end(), depth); // TODO: is farPlane working right?
 	}
 
-	inline void getSurfaceSDL() {}
+	inline SDL_Surface* getSurfaceSDL() { return windowSurface; }
 };
