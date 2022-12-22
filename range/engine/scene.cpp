@@ -11,7 +11,7 @@ Scene::Scene() {
 }
 
 // methods
-LightSource* Scene::createLightSource(const std::string& key, V3& pos, Colour& colour, float strength) {
+LightSource* Scene::createLightSource(const std::string& key, const V3& pos, const Colour& colour, float strength) {
 	// create the new light source
 	LightSource* light = new LightSource(pos, colour, strength);
 

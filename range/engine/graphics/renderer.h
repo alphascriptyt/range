@@ -24,6 +24,10 @@ class Renderer {
 private:
 	// TEMP
 	TTF_Font* font = nullptr;
+	int currentVertexTemp;
+	int currentTriTemp;
+	int currentTriVertexTemp;
+	int currentMeshTemp;
 
 	M4 projectionMatrix;
 	ViewFrustum viewFrustum;

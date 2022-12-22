@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vec3D.h"
+#include "mat4D.h"
 #include "../physics/physicsdata.h"
 
 #include <SDL.h>
@@ -37,4 +38,5 @@ public:
 	void move(const Uint8* keys, float dt);		// move camera position
 	void updateViewAngles(float y, float p);	// update the camera's viewangles
 	void setMode(int mode);
+	M4 makeViewMatrix();
 };

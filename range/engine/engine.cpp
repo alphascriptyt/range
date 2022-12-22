@@ -238,7 +238,6 @@ void Engine::loop() {
 			fps = getCurrentFPS(start_perf); // calculate delta time and fps
 			frame_time = frame_timer.elapsed() / 201.0f;
 
-			// reset the timer
 			frame_timer.reset();
 
 			//Scene::scenes[0]->getLightSource("viewpoint")->colour = Colour((rand() % 255), (rand() % 255), (rand() % 255));

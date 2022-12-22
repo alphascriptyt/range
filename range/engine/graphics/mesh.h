@@ -6,6 +6,7 @@
 #include "vec3D.h"
 #include "colour.h"
 #include "lightsource.h"
+#include "mat4D.h"
 
 class Mesh {
 public:										
@@ -26,27 +27,15 @@ public:
 	LightSource* lightsource = nullptr;		// stores the lightsource if the mesh represents one
 	std::string path = "";					// stores the path if the mesh was made from one
 
-	// constructor taking a reference to the vertices, faces and position of the mesh
+	// constructors
 	Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, const Colour& colour = COLOUR::WHITE);
-
-	// constructor taking a reference to the vertices, faces, position and size of the mesh
 	Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, const V3& s, const Colour& colour = COLOUR::WHITE);
-
-	// constructor taking a filename and a reference to the position of the mesh
 	Mesh(const std::string& filename, const Colour& colour = COLOUR::WHITE);
-
-	// constructor taking a filename and references to the position and size of the mesh
 	Mesh(const std::string& filename, const V3& s, const Colour& colour = COLOUR::WHITE);
-
-	// method to load mesh from a file
+	
+	// methods
 	bool loadFromObjFile(const std::string& filename);
-
-	// method to fill the mesh with colour
 	void fillColour(const Colour& colour);
-
-	// method to make the mesh represent a given lightsource
 	void makeLightSource(LightSource* light);
-
-	// method to translate mesh
 	void move(const Uint8* keys, float dt, float camera_yaw);
 };

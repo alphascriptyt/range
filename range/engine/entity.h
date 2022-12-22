@@ -1,6 +1,7 @@
 #pragma once
 #include "physics/physics.h"
 #include "graphics/mesh.h"
+#include "mat4D.h"
 
 // struct to store any physical entity in the scene
 struct Entity {
@@ -8,9 +9,6 @@ struct Entity {
 	Mesh* mesh = nullptr;
 	PhysicsData* physics = nullptr;
 	
-	// mesh needs position, and so does physics
-
-
 	// constructor
 	Entity();
 
@@ -20,4 +18,5 @@ struct Entity {
 	virtual void onUpdate(float dt);
 
 	void update(float dt);
+	M4 makeModelMatrix();
 };

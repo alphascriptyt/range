@@ -13,9 +13,9 @@ Camera::Camera(V3& pos) {
 }
 
 // methods
-
-// move camera dependent on key press
 void Camera::move(const Uint8* keys, float dt) {
+	// move camera dependent on key press
+	
 	// flag to determine whether the camera was moved in a direction
 	bool moved = false;
 
@@ -24,28 +24,29 @@ void Camera::move(const Uint8* keys, float dt) {
 
 	// handle based on camera mode
 	if (mode == NOCLIP) {
+		
 		// moving forwards
 		if (keys[SDL_SCANCODE_W]) {
-			physics.position.x += dt * sin(yaw);
+			physics.position.x += dt * -sin(yaw);
 			physics.position.z += dt * cos(yaw);
 		}
 
 		// moving backwards
 		if (keys[SDL_SCANCODE_S]) {
-			physics.position.x -= dt * sin(yaw);
+			physics.position.x -= dt * -sin(yaw);
 			physics.position.z -= dt * cos(yaw);
 		}
 
 		// moving right
 		if (keys[SDL_SCANCODE_D]) {
 			physics.position.x += dt * sin(yaw - HALF_PI);
-			physics.position.z += dt * cos(yaw - HALF_PI);
+			physics.position.z += dt * -cos(yaw - HALF_PI);
 		}
 
 		// moving left
 		if (keys[SDL_SCANCODE_A]) {
 			physics.position.x += dt * sin(yaw + HALF_PI);
-			physics.position.z += dt * cos(yaw + HALF_PI);
+			physics.position.z += dt * -cos(yaw + HALF_PI);
 		}
 
 		// moving down
@@ -107,9 +108,9 @@ void Camera::move(const Uint8* keys, float dt) {
 	}
 }
 
-// viewangle normalization (so the camera doesn't 'break its neck')
 void Camera::processPitch(float p) {
-	pitch += p;
+	//pitch += p;
+	pitch -= p;
 
 	// so we don't look past 90 degrees behind the camera
 	if (pitch > HALF_PI) {
@@ -121,7 +122,9 @@ void Camera::processPitch(float p) {
 }
 
 void Camera::processYaw(float y) {
-	yaw -= y;
+	//yaw -= y;
+	yaw += y;
+
 
 	// reset yaw after full 360 spin
 	if (yaw < -TWO_PI) {
@@ -152,4 +155,17 @@ void Camera::setMode(int camera_mode) {
 		physics.useGravity = true;
 	}
 
+}
+
+M4 Camera::makeViewMatrix() {
+	M4 translation;
+	translation.makeIdentity();
+
+	translation[0][3] = -physics.position.x;
+	translation[1][3] = -physics.position.y;
+	translation[2][3] = -physics.position.z;
+
+	M4 rotation = makeRotationMatrix(-yaw, -pitch, 0);
+
+	return rotation * translation;
 }

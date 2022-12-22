@@ -173,6 +173,9 @@ void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colo
 	float g_step = colour_step.g * 255;
 	float b_step = colour_step.b * 255;
 
+	// TODO: Look for bisqwit video that uses ints as colours?
+	// maybe this? https://bisqwit.iki.fi/jutut/kuvat/programming_examples/polytut/04-generic.cc
+
 	// NOTE: converting to int every frame ruins fps.
 
 	// render the scanline
@@ -185,10 +188,10 @@ void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colo
 		// increment depth and colour
 		z1 += z_increment;
 		//colour += colour_step;
+
 		r += r_step;
 		g += g_step;
 		b += b_step;
-
 	}
 }
 
@@ -356,11 +359,7 @@ void Renderer::viewTransform(V3& v) {
 
 V2 Renderer::project(V3& rotated) {
 	// convert a 4D matrix to 2D pixel coordinates
-	// the projection matrix is a standard matrix
-	// taking near and far plane members which determine the bounds of whether
-	// something should be rendered
-
-	V3 projected = multiplyBy4x1(projectionMatrix, rotated);
+	V3 projected = projectionMatrix * rotated;
 
 	// scale to screen
 	V2 pixel_coords;
@@ -368,7 +367,7 @@ V2 Renderer::project(V3& rotated) {
 	// avoid divide by 0 
 	if (projected.w != 0) {
 		// z component of V3 is copied to w
-		// divide by w (z), to correct projection for perspective
+		// divide by w, to correct projection for perspective
 		// so shape gets smaller as it gets further away
 		pixel_coords.x = projected.x / projected.w;
 		pixel_coords.y = projected.y / projected.w;
@@ -412,61 +411,16 @@ void Renderer::rotateMeshFace(V3& v1, V3& v2, V3& v3, V3& pos, float pitch, floa
 }
 
 void Renderer::drawLine3D(V3& v1, V3& direction, float length) {
-	// calculate the gap between the start and end of the line
-	V3 gap = direction;
+	// calculate the end point
+	V3 v2 = v1 + direction * length;
 
-	gap.x *= length;
-	gap.y *= length;
-	gap.z *= length;
-
-	V3 v2 = v1 + gap;
-
-	// calculate the start and end coordinates in 2D
+	// project the start and end coordinates to 2D
 	V2 start = project(v1);
 	V2 end = project(v2);
 
 	if (start.x > end.x) { std::swap(start, end); }
 
-	// linear interpolate for each pixel in the line
-	int dx, dy, p, y;
-
-	dx = end.x - start.x;
-	dy = end.y - start.y;
-
-	y = start.y;
-
-	p = 2 * dy - dx;
-
-	// standard line drawing algorithm
-	for (int x = start.x; x < end.x; ++x) {
-		bool visible = true;
-
-		// if y is off screen or y is below screen, ignore
-		if (y > (WN_HEIGHT - 1) || y < 0) { visible = false; }
-
-		// ignore line that starts past right side
-		if (x > WN_WIDTH - 1) { visible = false; }
-
-		// ignore point past left side
-		if (x < 0) { visible = false; }
-
-		if (p >= 0) {
-			if (visible) {
-				renderSurface.setPixel(x, y, COLOUR::LIME.toInt());
-			}
-
-			y = y + 1;
-			p = p + 2 * dy - 2 * dx;
-		}
-		else {
-			if (visible) {
-				renderSurface.setPixel(x, y, COLOUR::LIME.toInt());
-
-			}
-
-			p = p + 2 * dy;
-		}
-	}
+	drawLine(start, end, COLOUR::LIME);
 }
 
 float Renderer::applyPointLighting(V3& v1, V3& v2, V3& v3, LightSource& light) {
@@ -587,27 +541,40 @@ void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 }
 
 float Renderer::calculateDiffusePart(V3& v, V3& n, V3& light_pos, float a, float b) {
-	// TODO: Feels like something is wrong, things far away are still fairly lit up. just depends
-	//		 where camera is facing.
-
 	// calculate the direction of the light to the vertex
 	V3 light_direction = light_pos - v;
-	float light_distance = light_direction.size();
-	light_direction.normalize();
+	float light_distance = light_direction.size(); 
+	
+
+	//drawLine3D(v, light_direction, light_distance);
+
+	if (currentVertexTemp == 11 && currentTriTemp == 0 && currentTriVertexTemp == 0 && currentMeshTemp == 0) {
+		light_direction.print();
+		std::cout << light_distance << std::endl;
+		// FIXME: Issue found, light_distance changes, should never change right?
+		// NOTE: The distance works until a certain point?? Some underlying issue here.
+		// This means that light_pos isn't changing at the same rate as v, which it should be...
+		// this means they're not in the same space?
+
+		// NOTE: size has something to do with it because disabling this changes it?
+		// moving the mouse still changes the distance though, why???? are we rotating around a different
+		// origin because the mesh has its position and size?
+
+	}
+
+	light_direction /= light_distance; // normalise using the pre-calculated size
+	
+	//drawLine3D(light_pos, light_direction, 3);
 
 	// coordinates get flipped so we must invert the light direction
 	//light_direction *= -1;
 
 	// calculate how much the vertex is lit
-	float diffuse_factor = vectorDotProduct(light_direction, n); // diffuse factor gets bigger the further away???
-	diffuse_factor = std::max(0.0f, diffuse_factor);
-	float dp = 0.0f;
+	float diffuse_factor = std::max(0.0f, vectorDotProduct(light_direction, n));
 
-	// determine if the vertex is lit by the lightsource
-	
 	// attenuation is correct
 	float attenuation = 1.0f / (1.0f + (a * light_distance) + (b * light_distance * light_distance));
-	dp = abs(diffuse_factor * attenuation);
+	float dp = abs(diffuse_factor * attenuation);
 
 	return dp;
 }
@@ -624,9 +591,7 @@ void Renderer::getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Col
 
 	Colour ambient_part = COLOUR::WHITE;
 	float ambient_level = 0.1f;
-	ambient_part.r *= ambient_level;
-	ambient_part.g *= ambient_level;
-	ambient_part.b *= ambient_level;
+	ambient_part *= ambient_level;
 
 	// calculate the lines between vertices
 	V3 line1 = v2 - v1;
@@ -635,49 +600,47 @@ void Renderer::getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Col
 	// calculate the face normal
 	V3 normal = vectorCrossProduct(line1, line2);
 	normal.normalize();
-
+	
 	// loop through each lightsource
 	for (int l = 0; l < LightSource::sources.size(); ++l) {
+		if (l == 0) continue; // TEMP: TESTING
+
 		// get the pointer to the lightsource
 		LightSource* light = LightSource::sources[l];
 
 		// only calculate if light enabled
 		if (light->enabled) {
 			// convert the light to camera space
-			V3 L = light->position;
-
-			// transform light position into camera space - is this necessary?
+			V3 light_pos = light->position;
+			
+			// transform light position into camera space
 
 			// apply view transform
-			viewTransform(L);
+			viewTransform(light_pos);
 			
 			// apply camera rotation
-			rotateV3(L, camera->pitch, camera->yaw);
+			rotateV3(light_pos, camera->pitch, camera->yaw);
 
 			// calculate the light attenuation parameters
 			float a = 0.1f / light->strength;
 			float b = 0.01f / light->strength;
 
-			float dp = calculateDiffusePart(v1, normal, L, a, b);
+			currentTriVertexTemp = 0;
+			float dp = calculateDiffusePart(v1, normal, light_pos, a, b);
+
+			currentTriVertexTemp = 1;
+			// add to the colour
+			diffuse_part_v1 += light->colour * dp;
+
+			dp = calculateDiffusePart(v2, normal, light_pos, a, b);
 
 			// add to the colour
-			diffuse_part_v1.r += dp * light->colour.r;
-			diffuse_part_v1.g += dp * light->colour.g;
-			diffuse_part_v1.b += dp * light->colour.b;
+			diffuse_part_v2 += light->colour * dp;
 
-			dp = calculateDiffusePart(v2, normal, L, a, b);
+			dp = calculateDiffusePart(v3, normal, light_pos, a, b);
 
 			// add to the colour
-			diffuse_part_v2.r += dp * light->colour.r;
-			diffuse_part_v2.g += dp * light->colour.g;
-			diffuse_part_v2.b += dp * light->colour.b;
-
-			dp = calculateDiffusePart(v3, normal, L, a, b);
-
-			// add to the colour
-			diffuse_part_v3.r += dp * light->colour.r;
-			diffuse_part_v3.g += dp * light->colour.g;
-			diffuse_part_v3.b += dp * light->colour.b;
+			diffuse_part_v3 += light->colour * dp;
 		}
 	}
 
@@ -685,15 +648,27 @@ void Renderer::getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Col
 	colour_v1 = base_colour * (diffuse_part_v1 + ambient_part);
 	colour_v2 = base_colour * (diffuse_part_v2 + ambient_part);
 	colour_v3 = base_colour * (diffuse_part_v3 + ambient_part);
-	
 
+	if (colour_v1.r > 0.2 && currentVertexTemp == 11) {
+		// FIXME: essentially colour_V1 should never change right?
+		// because the only light is fixed?
 
+		//std::cout << "Red v1 " << std::endl;
+		//v1.print();
+		//colour_v1.print();
+	}
 }
 
 void Renderer::renderScene(Scene* scene) {
 	// clear render surface
-	renderSurface.clear(0x87CEEB, farPlane);
+	//renderSurface.clear(0x87CEEB, farPlane);
+	renderSurface.clear(0, farPlane);
 
+	//M4 view = camera->makeViewMatrix().getInverse();
+	M4 view = camera->makeViewMatrix();
+	
+	//view.print();
+	
 	// actually render the scene
 	// loop through each mesh
 	//for (int m = 0; m < Mesh::meshes.size(); ++m) {
@@ -705,21 +680,41 @@ void Renderer::renderScene(Scene* scene) {
 		// store all of the mesh triangles
 		std::vector<Triangle3D> triangles;
 
+		currentMeshTemp = s;
+
+		M4 model = entity->makeModelMatrix();
+		M4 model_view = view * model;
+		//model_view.print();
+		
 		// loop through each face in mesh
 		for (int i = 0; i < mesh->faces.size(); ++i) {
 			// get mesh face vertices
 			V3 v1(mesh->vertices[mesh->faces[i][0]]);
 			V3 v2(mesh->vertices[mesh->faces[i][1]]);
 			V3 v3(mesh->vertices[mesh->faces[i][2]]);
+
+			/*
+			STEPS:
+			Model Space -> World Space:		Model Matrix
+			World Space -> Camera Space:		View Matrix
+			View Space	-> Clip Space:		Projection Matrix
+
+
+			M4 modelView = model * view; 
 			
-			// convert from World Space -> Camera Space
+			*/
+
+			/*
+			currentVertexTemp = i;
+			
+			// convert Mesh Data -> World Space
 			
 			//rotateMeshFace(v1, v2, v3, mesh->pos, mesh->pitch, mesh->yaw); // TODO: CAN WE NOT DO THIS BEFORE SCALING AND POSITIONING? 
 			
 			// rotate mesh face - before scaling and translating so we do not need to re-position
 			rotateV3(v1, mesh->pitch, mesh->yaw);
 			rotateV3(v2, mesh->pitch, mesh->yaw);
-			rotateV3(v3, mesh->pitch, mesh->yaw);
+			rotateV3(v3, mesh->pitch, mesh->yaw); // TODO: Test this is actually working.
 
 			// scale vertices to mesh size
 			v1 *= mesh->size;
@@ -730,7 +725,9 @@ void Renderer::renderScene(Scene* scene) {
 			v1 += entity->physics->position;
 			v2 += entity->physics->position;
 			v3 += entity->physics->position;
-
+			
+			// convert from World Space -> Camera Space
+			
 			// TODO: think of a way to transform coordinates to world coordinates?
 			// the problem is that if we're moving constantly, we will constantly have to reconstruct,
 			// meaning another loop through the vertices
@@ -744,6 +741,11 @@ void Renderer::renderScene(Scene* scene) {
 			rotateV3(v1, camera->pitch, camera->yaw);
 			rotateV3(v2, camera->pitch, camera->yaw);
 			rotateV3(v3, camera->pitch, camera->yaw);
+			*/
+
+			v1 = model_view * v1;
+			v2 = model_view * v2;
+			v3 = model_view * v3;
 
 			// cull backfaces
 			if (isFrontFacing(v1, v2, v3)) {
@@ -774,6 +776,8 @@ void Renderer::renderScene(Scene* scene) {
 			Colour colour_v1, colour_v2, colour_v3;
 
 			bool fill = true;
+
+			currentTriTemp = t;
 			
 			// only apply lighting to filled meshes
 			if (fill && mesh->absorbsLight) {
@@ -790,9 +794,9 @@ void Renderer::renderScene(Scene* scene) {
 			// clipping 2d triangles shouldn't be the solution as this would create more triangles to draw.
 			drawTriangle(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3); // very slow.
 
-			drawLine(pv1, pv3, COLOUR::RED);
-			drawLine(pv1, pv2, COLOUR::RED);
-			drawLine(pv2, pv3, COLOUR::RED);
+			drawLine(pv1, pv3, COLOUR::WHITE);
+			drawLine(pv1, pv2, COLOUR::WHITE);
+			drawLine(pv2, pv3, COLOUR::WHITE);
 		}
 	}
 	
@@ -819,7 +823,6 @@ void Renderer::renderScene(Scene* scene) {
 	Colour colour_v3(0.0f, 0.0f, 1.0f);
 	*/
 	//drawTriangle(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3, true);
-
 }
 
 void Renderer::display() {

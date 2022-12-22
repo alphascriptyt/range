@@ -17,8 +17,22 @@ class Game : public Engine {
 
 	void onUpdate(float dt) {
 		if (keyboardState[SDL_SCANCODE_0]) {
-			std::cout << "0" << std::endl;
+		
+			V3 pivot = V3(10, 10, 10);
+
+			Entity* entity = Scene::scenes[0]->getEntity("source_cube");
+			V3 position = entity->physics->position - pivot;
+			rotateV3(position, 0, dt);
+			entity->physics->position = position + pivot;
+
+			LightSource* light = Scene::scenes[0]->getLightSource("light");
+			light->position = entity->physics->position;
+			
+
 		}
+		
+		
+
 
 		/*
 		Colour c1 = Colour(1, 0, 0);
@@ -71,6 +85,11 @@ TODO:
 - Setup some debugging tools like drawing normals and collision boxes + better wireframe
 - Some weird black thing going on when getting too close to cube?
 - When a line is drawing too shallow, we miss several pixels. this is causing the gaps? or are we missing out y coordinates?
+
+LEARNING: 
+- https://research.ncl.ac.uk/game/mastersdegree/graphicsforgames/vertextransformation/Tutorial%202%20-%20Vertex%20Transformation.pdf
+- https://research.ncl.ac.uk/game/mastersdegree/graphicsforgames/
+
 */
 
 int main(int argc, char** argv) {
@@ -98,22 +117,32 @@ int main(int argc, char** argv) {
 	
 	V3 mesh_pos(0, 5, 0);
 
-	//Mesh mesh_floor(Cube::vertices, Cube::faces, mesh_size, c);
 	Mesh room("C://Users//olive//Desktop//room.obj", V3(3, 1, 3), COLOUR::WHITE);
 
 	PhysicsData physics;
 	physics.position = mesh_pos;
-	scene.createEntity("room", room, physics);
+	//scene.createEntity("room", room, physics);
 
 	// TODO: Get lighting working as expected.
 	//			Something to do with the camera direction.
 
-	LightSource light(V3(0, 5, 0), COLOUR::RED, 1);
+	Mesh mesh_floor(Cube::vertices, Cube::faces, V3(20, 0.1, 20), COLOUR::WHITE);
+
+	PhysicsData mesh_physics;
+	mesh_physics.position = V3(0, 0, 5);
+	scene.createEntity("floor", mesh_floor, mesh_physics);
+
+
+	//LightSource light(V3(0, 10, 0), COLOUR::RED, 1);
+	scene.createLightSource("light", V3(0, 10, 0), COLOUR::RED, 1);
 
 	Mesh source(Cube::vertices, Cube::faces, V3(1, 1, 1), COLOUR::RED);
 	PhysicsData cube_physics;
 	cube_physics.position = V3(0, 10, 0);
 	scene.createEntity("source_cube", source, cube_physics);
+
+	// FIXME: Okay.. huge error found, if you face the other direction and press D, you will move left????
+	// is this the source of all my problems? who knows. Only when turning right.
 	
 	/*
 	V3 mesh_pos(0, -3, 5);

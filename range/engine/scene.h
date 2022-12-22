@@ -19,7 +19,7 @@ public:
 	std::vector<std::string> lightSourceKeys;	// the keys for each light source
 
 	// methods for adding to scene
-	LightSource* createLightSource(const std::string& key, V3& pos, Colour& colour, float strength);
+	LightSource* createLightSource(const std::string& key, const V3& pos, const Colour& colour, float strength);
 	Entity* createEntity(const std::string& key, Mesh& mesh, PhysicsData& physics);
 	void addEntity(const std::string& key, Entity& entity);
 
