@@ -5,12 +5,16 @@
 
 class Triangle3D {
 public:
-	// store triangle vertices
-	V3 v1 = V3(0, 0, 0);
-	V3 v2 = V3(0, 0, 0);
-	V3 v3 = V3(0, 0, 0);
+	// store triangle propeties
+	V3 v1;
+	V3 v2;
+	V3 v3;
+	V3 normal;
 
 	Colour colour = COLOUR::WHITE;
+	Colour colourV1 = COLOUR::WHITE;
+	Colour colourV2 = COLOUR::WHITE;
+	Colour colourV3 = COLOUR::WHITE;
 
 	// constructor to accept vertices as arguments
 	Triangle3D(V3& _v1, V3& _v2, V3& _v3);

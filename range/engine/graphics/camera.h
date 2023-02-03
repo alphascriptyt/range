@@ -25,14 +25,15 @@ public:
 	// properties
 	PhysicsData physics;
 	
-	V3 direction = V3(0, 0, 0);	// a 3D vector of the cameras direction
-	float pitch = 0;			// pitch viewangle
-	float yaw = 0;				// yaw viewangle
+	V3 direction = V3(0, 0, 1);
+	float pitch = 0;
+	float yaw = 0;
+	float roll = 0;
 
 	
 	// constructors
 	Camera();					// default constructor, position = {0,0,0}
-	Camera(V3& pos);			// constructor to set the position of the camera
+	Camera(V3& pos);
 
 	// methods
 	void move(const Uint8* keys, float dt);		// move camera position

@@ -148,7 +148,7 @@ void Engine::handleEvents(float& dt) {
 			if (!handlingInput) { break; }
 
 			// calculate change in pitch and yaw
-			float sensitivity = 0.1; // hardcoded mouse sensitivity 
+			float sensitivity = 0.1; // TODO: hardcoded mouse sensitivity 
 
 			// calculate pitch and yaw values
 			float p = toRadians((float)ev.motion.yrel * sensitivity);
@@ -158,9 +158,9 @@ void Engine::handleEvents(float& dt) {
 			renderer.camera->updateViewAngles(y, p);
 
 			// calculate the camera's looking direction
-			renderer.camera->direction.x = sin(renderer.camera->yaw);
-			renderer.camera->direction.y = -sin(renderer.camera->pitch);
-			renderer.camera->direction.z = cos(renderer.camera->yaw);
+			renderer.camera->direction.x = sin(renderer.camera->yaw) * cos(renderer.camera->pitch);
+			renderer.camera->direction.y = sin(renderer.camera->pitch);
+			renderer.camera->direction.z = cos(renderer.camera->yaw) * cos(renderer.camera->pitch);
 			renderer.camera->direction.normalize();
 
 			break;

@@ -6,8 +6,6 @@
 #include "engine/graphics/presets.h"
 #include "engine/physics/physics.h"
 
-
-
 #include <iostream>
 
 class Game : public Engine {
@@ -16,8 +14,14 @@ class Game : public Engine {
 	}
 
 	void onUpdate(float dt) {
+		if (keyboardState[SDL_SCANCODE_Q]) {
+			renderer.camera->roll -= dt;
+		}
+		else if (keyboardState[SDL_SCANCODE_E]) {
+			renderer.camera->roll += dt;
+		}
 		if (keyboardState[SDL_SCANCODE_0]) {
-		
+			
 			V3 pivot = V3(10, 10, 10);
 
 			Entity* entity = Scene::scenes[0]->getEntity("source_cube");
@@ -30,10 +34,17 @@ class Game : public Engine {
 			
 
 		}
-		
-		
+		if (keyboardState[SDL_SCANCODE_1]) {
+			camera.physics.position = V3(10, 2, 10);
+		}
 
+		
+		float speed = 3;
 
+		Scene::scenes[0]->getEntity("source_cube")->mesh->roll += dt * speed;
+		Scene::scenes[0]->getEntity("source_cube")->mesh->pitch += dt * speed;
+		Scene::scenes[0]->getEntity("source_cube")->mesh->yaw += dt * speed;
+		//camera.physics.position.print();
 		/*
 		Colour c1 = Colour(1, 0, 0);
 		Colour c2 = Colour(0, 1, 0);
@@ -86,11 +97,29 @@ TODO:
 - Some weird black thing going on when getting too close to cube?
 - When a line is drawing too shallow, we miss several pixels. this is causing the gaps? or are we missing out y coordinates?
 
-LEARNING: 
+LEARNING RESOURCES: 
 - https://research.ncl.ac.uk/game/mastersdegree/graphicsforgames/vertextransformation/Tutorial%202%20-%20Vertex%20Transformation.pdf
 - https://research.ncl.ac.uk/game/mastersdegree/graphicsforgames/
+- http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/#the-projection-matrix
+- https://www.youtube.com/watch?v=8bQ5u14Z9OQ
+- Row/Column Major Matrices = http://davidlively.com/programming/graphics/opengl-matrices/row-major-vs-column-major/
+- Extremely good perspective projection matrix video = https://www.youtube.com/watch?v=U0_ONQQ5ZNM
+
+NOTES:
+- Using DirectX conventions (I like left handed coordinate systems)
+
+- Using DirectX style row-major matrix, vector/matrix multiplications go 4D Vector = (4D Vector * 4D Matrix),
+	left-to-right rule of matrix concatenation
+
+- TODO: Using DirectX (-1, -1, 0) to (1, 1, 1) NDC Range - MAYBE?
+
+- Using left handed coordinate system, (Y up, Z forward, X right)
+	- TODO: apparently right handed is the industry standard? swap?
 
 */
+
+// TODO: SWITCHING TO ROW-MAJOR COLUMN MATRIX AS 4X4 MULTIPLICATIONS WILL BE FASTER.
+// 
 
 int main(int argc, char** argv) {
 	//Engine engine;
@@ -113,13 +142,15 @@ int main(int argc, char** argv) {
 	// i want to take it out of renderer as I don't like it and move it to a 2d primitive file or something?
 	// or move it into triangl2d?
 
-	
-	
-	V3 mesh_pos(0, 5, 0);
 
+
+
+	V3 mesh_pos(0, 5, 0);
+	
 	Mesh room("C://Users//olive//Desktop//room.obj", V3(3, 1, 3), COLOUR::WHITE);
 
 	PhysicsData physics;
+	
 	physics.position = mesh_pos;
 	//scene.createEntity("room", room, physics);
 
@@ -129,16 +160,16 @@ int main(int argc, char** argv) {
 	Mesh mesh_floor(Cube::vertices, Cube::faces, V3(20, 0.1, 20), COLOUR::WHITE);
 
 	PhysicsData mesh_physics;
-	mesh_physics.position = V3(0, 0, 5);
+	mesh_physics.position = V3(0, 0, 0);
 	scene.createEntity("floor", mesh_floor, mesh_physics);
 
 
 	//LightSource light(V3(0, 10, 0), COLOUR::RED, 1);
-	scene.createLightSource("light", V3(0, 10, 0), COLOUR::RED, 1);
+	scene.createLightSource("light", V3(0, 5, 0), COLOUR::RED, 1);
 
 	Mesh source(Cube::vertices, Cube::faces, V3(1, 1, 1), COLOUR::RED);
 	PhysicsData cube_physics;
-	cube_physics.position = V3(0, 10, 0);
+	cube_physics.position = scene.getLightSource("light")->position;
 	scene.createEntity("source_cube", source, cube_physics);
 
 	// FIXME: Okay.. huge error found, if you face the other direction and press D, you will move left????

@@ -22,6 +22,7 @@ public:
 	V3 center = V3();
 	float pitch = 0;
 	float yaw = 0;
+	float roll = 0;
 	bool absorbsLight = true;				// can be toggled off to simple render its normal colour without lighting
 	bool isLightSource = false;				// used for representing light source
 	LightSource* lightsource = nullptr;		// stores the lightsource if the mesh represents one

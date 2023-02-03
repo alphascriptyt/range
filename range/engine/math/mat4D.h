@@ -1,5 +1,4 @@
 #pragma once
-#include "vec3D.h"
 
 // 4D matrix class
 class M4 {
@@ -20,7 +19,6 @@ public:
 
     // operator overloading
     float* operator[](int index); // accessing via index
-	V3 operator*(const V3& v);
 	M4 operator*(M4& m2);
 };
 

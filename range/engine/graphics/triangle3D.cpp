@@ -16,4 +16,7 @@ Triangle3D::Triangle3D(V3& _v1, V3& _v2, V3& _v3, Colour& _colour) {
 
 	// set given colour
 	colour = _colour;
+	colourV1 = _colour;
+	colourV2 = _colour;
+	colourV3 = _colour;
 }

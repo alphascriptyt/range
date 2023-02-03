@@ -8,7 +8,7 @@
 
 #include <cmath>
 
-
+#include <iostream>
 // vector functions
 inline V3 vectorCrossProduct(V3& v1, V3& v2) {
 	// calculate the cross product of two vectors
@@ -31,7 +31,8 @@ inline V3 vectorIntersectPlane(V3& v1, V3& v2, Plane& plane) {
 	float bd = vectorDotProduct(v2, plane.normal);
 	V3 line_start_to_end = v2 - v1;
 
-	float t = (-plane_d - ad) / vectorDotProduct(line_start_to_end, plane.normal);
+//	float t = (-plane_d - ad) / vectorDotProduct(line_start_to_end, plane.normal);
+	float t = (-plane_d - ad) / (bd - ad);
 
 	V3 line_to_intersect = line_start_to_end * t;
 
@@ -88,4 +89,38 @@ inline bool isFrontFacing(V3& v1, V3& v2, V3& v3) {
 	V3 n = vectorCrossProduct(vs1, vs2);
 
 	return vectorDotProduct(v1, n) <= 0;
+}
+
+inline M4 makeLookAtMatrix(const V3& position, const V3& direction) {
+	V3 zaxis = direction;
+
+	// get positive right axis vector
+	V3 worldUp(0, 1, 0);
+	V3 xaxis = vectorCrossProduct(worldUp, zaxis);
+	xaxis.normalize();
+
+	// calculate camera up vector
+	V3 yaxis = vectorCrossProduct(zaxis, xaxis);
+	yaxis.normalize();
+
+	// create translation and rotation matrix
+	M4 translation;
+	translation.makeIdentity();
+	translation[3][0] = position.x;
+	translation[3][1] = position.y;
+	translation[3][2] = position.z;
+
+	M4 rotation;
+	rotation.makeIdentity();
+	rotation[0][0] = xaxis.x;
+	rotation[1][0] = xaxis.y;
+	rotation[2][0] = xaxis.z;
+	rotation[0][1] = yaxis.x;
+	rotation[1][1] = yaxis.y;
+	rotation[2][1] = yaxis.z;
+	rotation[0][2] = zaxis.x;
+	rotation[1][2] = zaxis.y;
+	rotation[2][2] = zaxis.z;
+
+	return translation * rotation;
 }

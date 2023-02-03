@@ -37,10 +37,12 @@ void ViewFrustum::setViewFrustumPlanes() {
 
 	std::vector<Plane> frustum_planes;
 	frustum_planes.push_back(near);
-	frustum_planes.push_back(left);	// TODO: left and right are still SLIGHTLY messing up.	
-	frustum_planes.push_back(right);
-	frustum_planes.push_back(top);
-	frustum_planes.push_back(bottom);
+
+	// TODO: left/right/top/bottom not working, need to account for width/vertical FOV
+	//frustum_planes.push_back(left);	// TODO: left and right are still SLIGHTLY messing up.	
+	//frustum_planes.push_back(right);
+	//frustum_planes.push_back(top);
+	//frustum_planes.push_back(bottom);
 	
 	planes = frustum_planes;
 }
@@ -64,6 +66,7 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 		bool in_second = false;
 
 		Colour colour = tri.colour;
+		V3 normal = tri.normal;
 
 		// determine which points are inside or outside of the plane
 		if (d1 >= 0) {
@@ -103,27 +106,36 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 		else if (inside_points_count == 1 && outside_points_count == 2) {
 			// if only one vertex is inside the Triangle3D
 			// a new Triangle3D will be formed using the plane edge
-
+			
 			V3 nv1 = vectorIntersectPlane(inside_points[0], outside_points[0], plane);
 			V3 nv2 = vectorIntersectPlane(inside_points[0], outside_points[1], plane);
-
+			/*
+			Triangle3D tri = Triangle3D(inside_points[0], nv1, nv2);
+			tri.colour = colour;
+			tri.normal = normal;
+			clipped.push_back(tri);
+			*/
 			if (in_first) {
 				Triangle3D tri = Triangle3D(inside_points[0], nv1, nv2);
 				tri.colour = colour;
+				tri.normal = normal;
 				clipped.push_back(tri);
 			}
 			else {
 				if (in_second) {
 					Triangle3D tri = Triangle3D(nv1, inside_points[0], nv2);
 					tri.colour = colour;
+					tri.normal = normal;
 					clipped.push_back(tri);
 				}
 				else {
 					Triangle3D tri = Triangle3D(nv1, nv2, inside_points[0]);
 					tri.colour = colour;
+					tri.normal = normal;
 					clipped.push_back(tri);
 				}
 			}
+			
 		}
 
 		else if (inside_points_count == 2 && outside_points_count == 1) {
@@ -133,23 +145,40 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 			V3 nv1 = vectorIntersectPlane(inside_points[0], outside_points[0], plane);
 			V3 nv2 = vectorIntersectPlane(inside_points[1], outside_points[0], plane);
 
+			/*
+			// TODO: SEEMS LIKE ITS SOMEWHAT TO DO WITH THIS
+			Triangle3D tri1 = Triangle3D(inside_points[0], inside_points[1], nv1);
+			tri1.colour = colour;
+			tri1.normal = normal;
+			clipped.push_back(tri1);
+
+			Triangle3D tri2 = Triangle3D(nv1, inside_points[1], nv2);
+			tri2.colour = colour;
+			tri2.normal = normal;
+			clipped.push_back(tri2);
+			*/
+			
 			if (in_first) {
 				if (in_second) {
 					Triangle3D tri1 = Triangle3D(inside_points[0], inside_points[1], nv1);
 					tri1.colour = colour;
+					tri1.normal = normal;
 					clipped.push_back(tri1);
 
 					Triangle3D tri2 = Triangle3D(nv1, inside_points[1], nv2);
 					tri2.colour = colour;
+					tri2.normal = normal;
 					clipped.push_back(tri2);
 				}
 				else {
 					Triangle3D tri1 = Triangle3D(inside_points[0], nv1, inside_points[1]);
 					tri1.colour = colour;
+					tri1.normal = normal;
 					clipped.push_back(tri1);
 
 					Triangle3D tri2 = Triangle3D(nv1, nv2, inside_points[1]);
 					tri2.colour = colour;
+					tri2.normal = normal;
 					clipped.push_back(tri2);
 				}
 
@@ -157,13 +186,14 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 			else {
 				Triangle3D tri1 = Triangle3D(nv1, inside_points[0], inside_points[1]);
 				tri1.colour = colour;
+				tri1.normal = normal;
 				clipped.push_back(tri1);
 
 				Triangle3D tri2 = Triangle3D(nv1, inside_points[1], nv2);
 				tri2.colour = colour;
+				tri2.normal = normal;
 				clipped.push_back(tri2);
 			}
-
 		}
 	}
 
