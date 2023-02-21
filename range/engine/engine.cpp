@@ -247,7 +247,6 @@ void Engine::loop() {
 		test_font_renderer.render(renderer.renderSurface, "Frame Time: ", std::to_string(frame_time), V2(50, 180));
 		title_font.render(renderer.renderSurface, "Range", V2(450, 50));
 
-
 		// render the buffer to the screen
 		renderer.display();
 	}

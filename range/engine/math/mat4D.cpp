@@ -19,25 +19,59 @@ void M4::makeIdentity() {
 
 M4 M4::getInverse() {
     // TODO: Refactor
-    // from onelonecoder, only for rotation/translation (eg view matrix)
+    
     M4 inverted;
 
-    /*
-    
-    inverted[0][0] = -m[0][0];
-    inverted[0][3] = -m[0][3];
-    inverted[1][1] = -m[1][1];
-    inverted[1][3] = -m[1][3];
-    inverted[2][2] = -m[2][2];
-    inverted[2][3] = -m[2][3];
+    // TODO: idk if this actually works.
+
+    inverted[0][0] = 1 / m[0][0];
+    inverted[1][1] = 1 / m[1][1];
+    inverted[2][2] = 1 / m[2][2];
     inverted[3][3] = 1;
+
+    inverted[0][1] = -m[0][1];
+    inverted[0][2] = -m[0][2];
+    inverted[0][3] = -m[0][3];
     
-    */
-    
-    
+    inverted[1][0] = -m[1][0];
+    inverted[1][2] = -m[1][2];
+    inverted[1][3] = -m[1][3];
+
+    inverted[2][0] = -m[2][0];
+    inverted[2][1] = -m[2][1];
+    inverted[2][3] = -m[2][3];
+
+    inverted[3][0] = -m[3][0];
+    inverted[3][1] = -m[3][1];
+    inverted[3][2] = -m[3][2];
+
 
     return inverted;
 
+}
+
+M4 M4::transpose() {
+    M4 out;
+
+    out[0][0] = m[0][0];
+    out[1][1] = m[1][1];
+    out[2][2] = m[2][2];
+    out[3][3] = m[3][3];
+
+    out[0][1] = m[1][0];
+    out[1][0] = m[0][1];
+    out[1][2] = m[2][1];
+    out[2][1] = m[1][2];
+    out[1][3] = m[3][1];
+    out[3][1] = m[1][3];
+    out[2][0] = m[0][2];
+    out[0][2] = m[2][0];
+    out[3][0] = m[0][3];
+    out[0][3] = m[3][0];
+    out[3][2] = m[2][3];
+    out[2][3] = m[3][2];
+
+    return out;
 }
 
 void M4::setRow(int row, float x, float y, float z, float w) {
@@ -142,8 +176,8 @@ M4 makeRotationMatrix(float yaw, float pitch, float roll) {
     M4 yaw_rotation;
     yaw_rotation.makeIdentity();
     yaw_rotation[0][0] = cos_yaw;
-    yaw_rotation[0][2] = sin_yaw;
-    yaw_rotation[2][0] = -sin_yaw;
+    yaw_rotation[0][2] = -sin_yaw;
+    yaw_rotation[2][0] = sin_yaw;
     yaw_rotation[2][2] = cos_yaw;
 
     M4 roll_rotation;
@@ -156,13 +190,14 @@ M4 makeRotationMatrix(float yaw, float pitch, float roll) {
     M4 pitch_rotation;
     pitch_rotation.makeIdentity();
     pitch_rotation[1][1] = cos_pitch;
-    pitch_rotation[1][2] = -sin_pitch;
-    pitch_rotation[2][1] = sin_pitch;
+    pitch_rotation[1][2] = sin_pitch;
+    pitch_rotation[2][1] = -sin_pitch;
     pitch_rotation[2][2] = cos_pitch;
 
 
+    //return yaw_rotation * roll_rotation * pitch_rotation;
     return yaw_rotation * pitch_rotation;
-
+    // TODO: figure out order of rotations, all rotation matrices seem to be correct though
 
 
 }

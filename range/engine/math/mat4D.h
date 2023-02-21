@@ -13,6 +13,7 @@ public:
 	// methods
 	void makeIdentity();
 	M4 getInverse();
+	M4 transpose();
 
 	void setRow(int row, float x, float y, float z, float w);
 	void print(); // for debugging

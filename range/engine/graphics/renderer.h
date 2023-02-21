@@ -22,6 +22,8 @@
 // renderer class to wrap all rendering
 class Renderer {
 private:
+	SDL_Surface* texture = nullptr;
+
 	// TEMP
 	TTF_Font* font = nullptr;
 	int currentVertexTemp;
@@ -36,7 +38,6 @@ private:
 
 	// renderer settings - change?
 	int FOV = 90;											// horizontal FOV
-	//float nearPlane = 1.0f;								// inside viewers head (only increases fps cause triangles are smaller)
 	float nearPlane = 0.1f;									// inside viewers head
 	float farPlane = 100;									// outside render vision - default depth buffer value
 	int WN_WIDTH = 960;										// window width
@@ -58,7 +59,7 @@ private:
 	void getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3);
 	
 	// other 3D methods
-	void drawLine3D(V3& v1, V3& direction, float length);
+	void drawLine3D(V3& v1, V3& direction, float length, Colour& colour);
 
 	// internal 2D primitive helper methods
 	void drawFlatBottomTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& colour_v2, Colour& colour_v3); // calls other drawing functions

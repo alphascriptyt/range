@@ -9,12 +9,17 @@
 #include "mat4D.h"
 
 class Mesh {
+	void calculateNormals();
+	void init(const Colour& colour);
+
 public:										
 	void calculateCenter();
+	
 
 	// mesh shape properties
 	std::vector<V3> vertices = {};
 	std::vector<std::vector<int>> faces = {};
+	std::vector<V3> faceNormals;
 	std::vector<Colour> colours = {};
 
 	// mesh properties

@@ -106,15 +106,18 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 		else if (inside_points_count == 1 && outside_points_count == 2) {
 			// if only one vertex is inside the Triangle3D
 			// a new Triangle3D will be formed using the plane edge
+			float t;
+			V3 nv1 = vectorIntersectPlane(inside_points[0], outside_points[0], plane, t);
+			V3 nv2 = vectorIntersectPlane(inside_points[0], outside_points[1], plane, t);
 			
-			V3 nv1 = vectorIntersectPlane(inside_points[0], outside_points[0], plane);
-			V3 nv2 = vectorIntersectPlane(inside_points[0], outside_points[1], plane);
-			/*
+			
 			Triangle3D tri = Triangle3D(inside_points[0], nv1, nv2);
 			tri.colour = colour;
 			tri.normal = normal;
 			clipped.push_back(tri);
-			*/
+			
+			
+			/*
 			if (in_first) {
 				Triangle3D tri = Triangle3D(inside_points[0], nv1, nv2);
 				tri.colour = colour;
@@ -135,17 +138,18 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 					clipped.push_back(tri);
 				}
 			}
-			
+			*/
 		}
 
 		else if (inside_points_count == 2 && outside_points_count == 1) {
 			// if only two vertices are inside the plane
 			// a quad will be formed and therefore two
 			// new Triangle3Ds will be formed
-			V3 nv1 = vectorIntersectPlane(inside_points[0], outside_points[0], plane);
-			V3 nv2 = vectorIntersectPlane(inside_points[1], outside_points[0], plane);
+			float t;
+			V3 nv1 = vectorIntersectPlane(inside_points[0], outside_points[0], plane, t);
+			V3 nv2 = vectorIntersectPlane(inside_points[1], outside_points[0], plane, t);
 
-			/*
+			
 			// TODO: SEEMS LIKE ITS SOMEWHAT TO DO WITH THIS
 			Triangle3D tri1 = Triangle3D(inside_points[0], inside_points[1], nv1);
 			tri1.colour = colour;
@@ -156,8 +160,8 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 			tri2.colour = colour;
 			tri2.normal = normal;
 			clipped.push_back(tri2);
-			*/
 			
+			/*
 			if (in_first) {
 				if (in_second) {
 					Triangle3D tri1 = Triangle3D(inside_points[0], inside_points[1], nv1);
@@ -194,6 +198,7 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 				tri2.normal = normal;
 				clipped.push_back(tri2);
 			}
+			*/
 		}
 	}
 
@@ -201,6 +206,8 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 }
 
 void ViewFrustum::clipTriangles(std::vector<Triangle3D>& triangles) {
+	std::vector<Triangle3D> clipped;
+
 	// perform frustum culling
 	for (auto& plane : planes) {
 		clipTrianglesAgainstPlane(triangles, plane);

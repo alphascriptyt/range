@@ -25,7 +25,7 @@ void Camera::move(const Uint8* keys, float dt) {
 
 	V3 forward(direction.x, 0, direction.z);
 	forward.normalize();
-
+	
 	if (mode == NOCLIP) {
 		// moving forwards
 		if (keys[SDL_SCANCODE_W]) {

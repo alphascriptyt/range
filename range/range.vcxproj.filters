@@ -34,6 +34,7 @@
     <ClCompile Include="engine\entity.cpp" />
     <ClCompile Include="engine\physics\physicsdata.cpp" />
     <ClCompile Include="engine\ui\textrenderer.cpp" />
+    <ClCompile Include="engine\graphics\vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\engine.h" />
@@ -64,5 +65,6 @@
     <ClInclude Include="engine\ui\ui.h" />
     <ClInclude Include="engine\ui\uicomponent.h" />
     <ClInclude Include="engine\ui\textrenderer.h" />
+    <ClInclude Include="engine\graphics\vertex.h" />
   </ItemGroup>
 </Project>

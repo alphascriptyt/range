@@ -1,4 +1,5 @@
 #include "SDL.h"
+#include "SDL_image.h"
 #include "mesh.h"
 #include "renderer.h"
 #include "mat4D.h"
@@ -47,13 +48,51 @@ void Renderer::createProjectionMatrix() {
 	projectionMatrix.setRow(3, 0, 0, -1, 0);
 	*/
 
+	
+	
+
 	// row major	
 	projectionMatrix.setRow(0, -half_tan_fov / aspect_ratio, 0, 0, 0); // made negative so x is correct? right = positive
 	projectionMatrix.setRow(1, 0, half_tan_fov, 0, 0);
 	//projectionMatrix.setRow(2, 0, 0, (nearPlane + farPlane) / (nearPlane - farPlane), -1);
 	//projectionMatrix.setRow(3, 0, 0, (2 * nearPlane * farPlane) / (nearPlane - farPlane), 0);
-	projectionMatrix.setRow(2, 0, 0, (nearPlane + farPlane) / (farPlane - nearPlane), -1);
-	projectionMatrix.setRow(3, 0, 0, -(2 * nearPlane * farPlane) / (farPlane - nearPlane), 0);
+	//projectionMatrix.setRow(2, 0, 0, (nearPlane + farPlane) / (farPlane - nearPlane), -1);
+	//projectionMatrix.setRow(3, 0, 0, -(2 * nearPlane * farPlane) / (farPlane - nearPlane), 0);
+	projectionMatrix.setRow(2, 0, 0, farPlane / (farPlane - nearPlane), -1);
+	projectionMatrix.setRow(3, 0, 0, -(nearPlane * farPlane) / (farPlane - nearPlane), 0);
+
+
+	 // TODO: USE OLD CODE
+	// TEMP: OLD MATRIX
+	projectionMatrix.setRow(0, -1 / half_tan_fov, 0, 0, 0);
+	projectionMatrix.setRow(1, 0, aspect_ratio / half_tan_fov, 0, 0);
+	//projectionMatrix.setRow(2, 0, 0, (nearPlane + farPlane) / (nearPlane - farPlane), -1);
+	//projectionMatrix.setRow(3, 0, 0, (2 * nearPlane * farPlane) / (nearPlane - farPlane), 0);
+
+
+	/*
+	projection_matrix.setRow(0, 1 / halfTanFOV, 0, 0, 0);
+	projection_matrix.setRow(1, 0, aspectRatio / halfTanFOV, 0, 0);
+	projection_matrix.setRow(2, 0, 0, (nearPlane + farPlane) / (nearPlane - farPlane), -1);
+	projection_matrix.setRow(3, 0, 0, (2 * nearPlane * farPlane) / (nearPlane - farPlane), 0);
+	*/
+	
+
+
+	/*
+	projectionMatrix.setRow(0, -half_tan_fov / aspect_ratio, 0, 0, 0); // made negative so x is correct? right = positive
+	projectionMatrix.setRow(1, 0, half_tan_fov, 0, 0);
+	projectionMatrix.setRow(2, 0, 0, farPlane / (farPlane - nearPlane), 0);
+	projectionMatrix.setRow(3, 0, 0, -(nearPlane * farPlane) / (farPlane - nearPlane), 1);
+
+
+	projectionMatrix.setRow(0, -half_tan_fov / aspect_ratio, 0, 0, 0); // made negative so x is correct? right = positive
+	projectionMatrix.setRow(1, 0, half_tan_fov, 0, 0);
+	projectionMatrix.setRow(2, 0, 0, -farPlane / (farPlane - nearPlane), -1);
+	projectionMatrix.setRow(3, 0, 0, -(nearPlane * farPlane) / (farPlane - nearPlane), -1);
+	*/
+
+	// TODO: having the [3][3] as 1 sort of.. fixes the clipping issue? SO it has to be to do with w?
 }
 
 bool Renderer::init(const std::string& window_name) {
@@ -82,6 +121,12 @@ bool Renderer::init(const std::string& window_name) {
 	// check for failures creating the rendersurface
 	if (!renderSurface.init(window, WN_WIDTH, WN_HEIGHT, COLOUR::WHITE.toInt(), nearPlane)) {
 		return false;
+	}
+
+	IMG_Init(IMG_INIT_JPG);
+	texture = IMG_Load("C:/Users/olive/source/repos/range/range/wood.jpg");
+	if (!texture) {
+		std::cout << "TEMP: Texture failed to load.\n" << IMG_GetError();
 	}
 
 	// create projection matrix
@@ -227,8 +272,9 @@ void Renderer::drawScanLine2(int x1, int x2, int y, Colour colour_v1, Colour col
 		//std::cout << s << " " << zt << std::endl;
 		
 		//renderSurface.setIndex(x, ((c1z * (1 - s) + (c2z * s)) * z).toInt(), z);
-		renderSurface.setIndex(x, colour.toInt(), z);
-		
+		renderSurface.setIndex(x, (colour / z).toInt(), z);
+	
+
 		z += dz;
 		colour += c_step;
 
@@ -249,12 +295,13 @@ void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colo
 	float x2x1 = x2 - x1;
 	Colour c2c1 = colour_v2 - colour_v1;
 	
+	
 	// clip point to left side
 	if (x1 < 0) {
 		colour_v1 = colour_v1 + (c2c1 * ((-x1) / x2x1));
 		x1 = 0;
 	}
-
+	
 	// clip point to right side
 	if (x2 > WN_WIDTH - 1) {
 		colour_v2 = colour_v2 - (c2c1 * ((x2 - WN_WIDTH) / x2x1));
@@ -272,6 +319,7 @@ void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colo
 	float z_increment = (z2 - z1) / x2x1;
 
 	// calculate colour increment
+	//sColour colour_step = (colour_v2 - colour_v1) / x2x1;
 	Colour colour_step = c2c1 / x2x1;
 	Colour colour = colour_v1;
 
@@ -288,16 +336,19 @@ void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colo
 
 	// NOTE: converting to int every frame ruins fps.
 
+//	std::cout << z1 << " " << z2 << std::endl;
+
 	// render the scanline
 	for (; x1 <= x2; ++x1) {
 		// set the pixel via index
+
+		float z = 1.0f / z1;
+
 		//renderSurface.setIndex(x1, colour.toInt(), z1); // TODO: I think this is actually the slow part!! look into this.
+		//renderSurface.setIndex(x1, ((int)(r * z) << 16) | ((int)(g * z) << 8) | ((int)(b * z)), z1); // TODO: I think this is actually the slow part!! look into this.
 		renderSurface.setIndex(x1, ((int)(r) << 16) | ((int)(g) << 8) | ((int)(b)), z1); // TODO: I think this is actually the slow part!! look into this.
 		
-		Colour c = COLOUR::WHITE;
-		//renderSurface.setIndex(x1, (c * z1).toInt(), z1);
-
-		//renderSurface.setIndex(x1, c + cs * x_percent, z1);
+		
 		// increment depth and colour
 		z1 += z_increment;
 		//colour += colour_step;
@@ -305,6 +356,7 @@ void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colo
 		r += r_step;
 		g += g_step;
 		b += b_step;
+		//colour += colour_step;	
 
 		
 	}
@@ -399,7 +451,7 @@ void Renderer::drawFlatTopTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Co
 	float m2 = (v3.x - v2.x) / dy;
 
 	// calculate dz/dy for each triangle side
-	float mz1 = (v3.w - v1.w) / dy; // TODO: mz1 == mz2??? why?
+	float mz1 = (v3.w - v1.w) / dy;
 	float mz2 = (v3.w - v2.w) / dy;
 
 	// set initial start and end x of line
@@ -457,6 +509,10 @@ void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& c
 	if (v1.y > v3.y) { std::swap(v1, v3); std::swap(colour_v1, colour_v3); } // ensure v3 is bigger than v1
 	if (v2.y > v3.y) { std::swap(v2, v3); std::swap(colour_v2, colour_v3); } // ensure v3 is bigger than v2
 
+	drawLine(v1, v2, COLOUR::WHITE);
+	drawLine(v2, v3, COLOUR::WHITE);
+	drawLine(v1, v3, COLOUR::WHITE);
+
 	// check if triangles already has a flat top/bottom 
 	if (v1.y == v2.y) { drawFlatTopTriangle(v1, v2, v3, colour_v1, colour_v2, colour_v3); return; }
 	if (v2.y == v3.y) { drawFlatBottomTriangle(v1, v2, v3, colour_v1, colour_v2, colour_v3); return; }
@@ -465,25 +521,31 @@ void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& c
 	float t = (v2.y - v1.y) / (v3.y - v1.y);
 	float x = v1.x + t * (v3.x - v1.x); // lerp for x
 
+	// TODO: v4's x is sometimes extremely far to the left when it shouldn't be? because v3.x is extremely small?? the vertex
+	//		is essentially ended up stupidly far to the left, maybe due to FOV? something wrong with projection?
+
 	// calculate interpolated depth
 	// TODO: figure out if this interpolation is correct
 	float w = v1.w + t * (v3.w - v1.w);
 
-	// TODO: w is always set to one of the vertices!!! calculation of t is correct, not sure what else the issue is.
-	// TODO: I think this is the issue?
 
 	//std::cout << " v1.w: " << v1.w;
 	//std::cout << " v2.w: " << v2.w;
 	//std::cout << " v3.w: " << v3.w;
 	//std::cout << " w: " << w << std::endl;
+	 
+	if (x < -3000) { 
+		//std::cout << "v1.x: " << v1.x << std::endl << "v3.x: " << v3.x << std::endl << "v3.y: " << v3.y << std::endl;
+	}
 
 	V2 v4(x, v2.y, w);
-
-	// get v4's colour
-	//Colour mc = (colour_v3 - colour_v1) / (v3.x - v1.x);	// get gradient of depths
-	//Colour colour_v4 = colour_v1 + (mc * (x - v1.x));		// linear interpolate to get v4's depth
-
+	std::cout << v1.x << std::endl;
 	Colour colour_v4 = colour_v1 + (colour_v3 - colour_v1) * t;
+	
+
+
+	//drawLine(v2, v4, COLOUR::WHITE);
+	//drawScanLine(v2.x, v4.x, v2.y, COLOUR::WHITE, COLOUR::WHITE);
 
 
 	// draw split triangles
@@ -513,29 +575,87 @@ V2 Renderer::project(V3& rotated) {
 	so we divide everything by w to uniformally scale it down, removing the extra 4D component
 	*/
 
+
 	// convert a 4D matrix to 2D pixel coordinates
 	V3 projected = rotated * projectionMatrix;
 	
 	// scale to screen
 	V2 pixel_coords;
 
+	pixel_coords.w = -1.0f / projected.w;
+	
+	//std::cout << "w: " << pixel_coords.w << std::endl;
+
+	
+	projected.x /= projected.w;
+	projected.y /= projected.w;
+	projected.z /= projected.w;
+	
+
+
+
+	// NDC seems to be correct?
+
+	// TODO: THE WHOLE ISSUE IS WITH THE W, WHEN MESSING AROUND WITH OTHER PROJECTION MATRICES IT DIDN'T DO IT.
+
+	// TODO: THE ISSUE IS WHEN A VERTEX IS BEHIND THE CAMERA, ITS W GETS SET TO -10 WHICH GIVES STUPID VALUES
+	//		 when we clip, z gets set to 0.1, then 1 / 0.1 = 10, this is a huge value for w which isn't right 
+	//		 as the depth is only 0.1? This means the colour seems super high when depth correcting
+	//			- as soon as we clip and get that near plane value we get stupid high values
+	//		BUT.... Is this the error???
+	//			when w = -9.747797, projected =  5.566510 0.136983 0.949509 -0.102587 which is a normal value...
+	//			so why does w = 10 screw us up so bad? do more investigating into what is causing the crazy values...
+
+	// TODO: actually think about how it works, like why do neara plane values go so big and what should they be instead?
+
+	// Z is the distance from the near clipping plane to the fragment.W is the distance from the camera to the fragment.
+	//	TODO: if this is the case then z is wrong, as z should be 0? 
+	//http://www.bluevoid.com/opengl/sig99/advanced99/notes/node28.html
+
+	// TODO: look into clipping maybe? https://gabrielgambetta.com/computer-graphics-from-scratch/11-clipping.html
+
+	// TODO: z/w should be used for depth buffer?
+
+	/*
+	w: -9.999998
+	 -10.016663 7.434866 1.000000 -0.100000
+	w: -9.999998
+	 -9.963309 5.439899 1.000000 -0.100000
+	w: -1.344991
+	 -1.102080 -0.450524 -0.732735 -0.743500
+	v1.x: -65.331192
+	v3.x: -5770.664062
+	v3.y: 3036.551758
+	-4327.241211
+	
+	*/
+
+	// perspective divide
+//	projected *= pixel_coords.w;
+
+	// TODO: when clipped, the z value is always 1 and w is 0.1
+
 	// z component of V3 is copied to w
 	// divide by w, to correct projection for perspective
 	// so shape gets smaller as it gets further away
 	if (projected.w != 0) {
-		projected.x /= projected.w;
-		projected.y /= projected.w;
-		projected.z /= projected.w;
+	//	projected.x /= projected.w;
+		//projected.y /= projected.w;
+		//projected.z /= projected.w;
 	}
+
+//	projected.print();
 
 	// center in screen and scale
 	pixel_coords.x = (projected.x + 1) * 0.5f * WN_WIDTH;
 	pixel_coords.y = (projected.y + 1) * 0.5f * WN_HEIGHT;
-
+	
 	// precalculate 1/w for per pixel interpolation
 	// TODO: This doesn't feel 100% right.
 	// TODO: Back to lerping I guess.
-	pixel_coords.w = 1.0f / projected.w; // TODO: making z positive means depth test is backwards
+	//pixel_coords.w = -1.0f / projected.w; // TODO: making z positive means depth test is backwards
+	
+	//printf("w: %f, z: %f\n", pixel_coords.w, rotated.z);
 
 	//std::cout << "1/w: " << pixel_coords.w << std::endl;
 
@@ -569,7 +689,7 @@ void Renderer::rotateMeshFace(V3& v1, V3& v2, V3& v3, V3& pos, float pitch, floa
 	v3 = pos + tv3;
 }
 
-void Renderer::drawLine3D(V3& v1, V3& direction, float length) {
+void Renderer::drawLine3D(V3& v1, V3& direction, float length, Colour& colour) {
 	// calculate the end point
 	V3 v2 = v1 + direction * length;
 
@@ -579,7 +699,7 @@ void Renderer::drawLine3D(V3& v1, V3& direction, float length) {
 
 	if (start.x > end.x) { std::swap(start, end); }
 
-	drawLine(start, end, COLOUR::LIME);
+	drawLine(start, end, colour);
 }
 
 float Renderer::applyPointLighting(V3& v1, V3& v2, V3& v3, LightSource& light) {
@@ -667,9 +787,7 @@ void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 
 	Colour ambient_part = COLOUR::WHITE;
 	float ambient_level = 0.1f;
-	ambient_part.r *= ambient_level;
-	ambient_part.g *= ambient_level;
-	ambient_part.b *= ambient_level;
+	ambient_part *= ambient_level;
 
 	// loop through each lightsource
 	for (int l = 0; l < LightSource::sources.size(); ++l) {
@@ -682,18 +800,12 @@ void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 			float dp = applyPointLighting(v1, v2, v3, *light);
 
 			// add to the colour
-			diffuse_part.r += dp * light->colour.r;
-			diffuse_part.g += dp * light->colour.g;
-			diffuse_part.b += dp * light->colour.b;
+			diffuse_part += light->colour * dp;
 		}
 	}
 
 	// calculate the resultant colour off the face
-	Colour face_colour(0, 0, 0);
-
-	face_colour.r = (diffuse_part.r + ambient_part.r) * base_colour.r;
-	face_colour.g = (diffuse_part.g + ambient_part.g) * base_colour.g;
-	face_colour.b = (diffuse_part.b + ambient_part.b) * base_colour.b;
+	Colour face_colour = (diffuse_part + ambient_part) * base_colour;
 	
 	// set the colour of the mesh
 	base_colour = face_colour;
@@ -701,62 +813,20 @@ void Renderer::applyLighting(V3& v1, V3& v2, V3& v3, Colour& base_colour) {
 
 float Renderer::calculateDiffusePart(V3& v, V3& n, V3& light_pos, float a, float b) {
 	// calculate the direction of the light to the vertex
-	V3 light_direction = light_pos - v;
-
-	float light_distance = light_direction.size();
-	light_direction /= light_distance; // normalise using the pre-calculated size
-
-	// TODO: WHEN THE LIGHT IS BEHIND, THE LIGHT_DISTANCE IS VERY HIGH. WHY?
-
-	
-	// TODO: WHEN Z IS NEGATIVE IT BREAKS, OR ANY AXIS IS NEGATIVE?
-	// TODO: CHANGES DIFFERENTLY WHEN ROTATTING
-	//if (currentTriTemp == 0 && currentMeshTemp == 0 && currentTriVertexTemp == 0 && v.id == 5) {
-	/*
-	if (v.id == 5) {
-		std::cout << "vertex: "; v.print();
-		std::cout << "light_pos: "; light_pos.print();		
-		std::cout << std::fixed << "direction normalised: ";  light_direction.print();
-		std::cout << std::fixed << "normal normalised: ";  n.print();
-		std::cout << "distance: " << light_distance << "\n\n";
-
-		//drawLine3D(v, light_direction, light_distance);
-	}
-	*/
-	/*
-	V3 d = light_direction;
-	M4 rot = makeRotationMatrix(camera->yaw, camera->pitch, 0);
-	d = d* rot;
-	d.normalize();
-	std::cout << "direction rotated? ";  d.print();
-	*/
-	//drawLine3D(v, n, 3);
-
-	//std::cout << "dist: " << light_distance << std::endl;
-	
-	//light_direction.print();
-	//std::cout << light_distance << std::endl;
+	//V3 light_direction = light_pos - v;
+	V3 light_direction = v - light_pos;
 		
-	V3 t = light_direction;
-	t.normalize();
-	//drawLine3D(v, t, light_distance);
-	
-	// FIXME: Issue found, light_distance changes, should never change right?
-	// NOTE: The distance works until a certain point?? Some underlying issue here.
-	// This means that light_pos isn't changing at the same rate as v, which it should be...
-	// this means they're not in the same space?
-	//std::cout << "v1: ";  v.print();
+	// normalise and store size
+	float light_distance = light_direction.size();
+	//light_direction /= light_distance;
 
-	
-	
-	//drawLine3D(light_pos, light_direction, 3);
+	//drawLine3D(light_pos, light_direction, light_distance, COLOUR::YELLOW);
 
-	// coordinates get flipped so we must invert the light direction
-	//light_direction *= -1;
+	light_direction *= -1;
 
 	// calculate how much the vertex is lit
 	float diffuse_factor = std::max(0.0f, vectorDotProduct(light_direction, n));
-	
+
 	// attenuation is correct
 	float attenuation = 1.0f / (1.0f + (a * light_distance) + (b * light_distance * light_distance));
 	float dp = abs(diffuse_factor * attenuation);
@@ -776,6 +846,8 @@ void Renderer::getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Col
 
 	Colour ambient_part = COLOUR::WHITE;
 	float ambient_level = 0.1f;
+	//float ambient_contribution = 1 - ambient_level;
+
 	ambient_part *= ambient_level;
 
 	// calculate the lines between vertices
@@ -785,6 +857,14 @@ void Renderer::getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Col
 	// calculate the face normal
 	V3 normal = vectorCrossProduct(line1, line2);
 	normal.normalize();
+
+	V3 v4 = (v1 + v2 + v3) / 3.0f;
+	//normal = currentNormal;
+	//drawLine3D(v4, normal, 3, COLOUR::AQUA);
+
+	
+
+	
 	//normal.print();
 	//camera->physics.position.print();
 
@@ -798,26 +878,11 @@ void Renderer::getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Col
 		// only calculate if light enabled
 		if (light->enabled) {
 			// convert the light to camera space
-			// TODO: I believe this conversion is wrong, we're multiplying by position but
-			// position gets put in the model matrix?
-			// TODO: something is very wrong, the light_pos only changes when we move
-			// almost directly in one axis. Camera pos changes correctly though.
-			// ISSUE: When we look left and forwards and move, the light_pos y gets changed
-			// rather than the x.... not too sure why???
-
-			// TODO: LIGHT_POS DOESN'T CHANGE WHEN WE MOVE PAST THE AXIS
-			// the issue is that when we move past on axis, the 
-
-			V3 light_pos = light->position * viewMatrix;
-			light_pos.print();
-
-			// TODO: ISSUE: when light_pos z is negative. lighting breaks.
-
-			//V3 light_pos = light->position * modelViewMatrix;
-
-			//viewMatrix.print();
-			//std::cout << "light_pos: "; light_pos.print();
 			
+			
+			V3 light_pos = light->position * viewMatrix;
+
+			//light_pos.print("light_pos: ");
 
 			// calculate the light attenuation parameters
 			float a = 0.1f / light->strength;
@@ -840,22 +905,18 @@ void Renderer::getVertexColours(V3& v1, V3& v2, V3& v3, Colour& base_colour, Col
 
 			// add to the colour
 			diffuse_part_v3 += light->colour * dp;
+
+			
 		}
 	}
 
 	// calculate the resultant colour off the face
+	ambient_part = Colour(0, 0, 0);
 	colour_v1 = base_colour * (diffuse_part_v1 + ambient_part);
 	colour_v2 = base_colour * (diffuse_part_v2 + ambient_part);
 	colour_v3 = base_colour * (diffuse_part_v3 + ambient_part);
 
-	if (colour_v1.r > 0.2 && currentVertexTemp == 11) {
-		// FIXME: essentially colour_V1 should never change right?
-		// because the only light is fixed?
-
-		//std::cout << "Red v1 " << std::endl;
-		//v1.print();
-		//colour_v1.print();
-	}
+	//colour_v1.print();
 }
 
 void Renderer::renderScene(Scene* scene) {
@@ -894,6 +955,38 @@ void Renderer::renderScene(Scene* scene) {
 
 	viewMatrix = camera->makeViewMatrix();
 
+	std::vector<Triangle3D>triangles = {};
+	V3 v1 = V3(0,0,1);
+	V3 v2 = V3(1,0,0);
+	V3 v3 = V3(0,1,-1);
+
+	v1 = v1 * viewMatrix;
+	v2 = v2 * viewMatrix;
+	v3 = v3 * viewMatrix;
+
+
+	Triangle3D tri(v1, v2, v3);
+	triangles.push_back(tri);
+
+
+	V3 plane_normal = V3(0, 0, 1);
+	V3 plane_point = V3(0, 0, nearPlane);
+	Plane plane(plane_normal, plane_point);
+
+	viewFrustum.clipTrianglesAgainstPlane(triangles, plane);
+
+	/*
+	for (Triangle3D& tri : triangles) {
+		tri.v1.print("v1: ");
+		tri.v2.print("v2: ");
+		tri.v3.print("v3: ");
+	}
+	
+
+	std::cout << "project v2: ";  project(triangles[0].v2).print();
+	*/
+	//return;
+
 	//viewMatrix.print();
 	//return;
 
@@ -928,42 +1021,12 @@ void Renderer::renderScene(Scene* scene) {
 
 		modelViewMatrix = model_view;
 
-
 		// loop through each face in mesh
 		for (int i = 0; i < mesh->faces.size(); ++i) {
 			// get mesh face vertices
-			V3 v1(mesh->vertices[mesh->faces[i][0]]);
-			V3 v2(mesh->vertices[mesh->faces[i][1]]);
-			V3 v3(mesh->vertices[mesh->faces[i][2]]);
-
-			if (i == 0 && s == 0) {
-
-				// camera transform
-				V3 test1 = v1 * model_view;
-				V3 test2 = v2 * model_view;
-				V3 test3 = v3 * model_view;
-
-				V3 line1 = test2 - test1;
-				V3 line2 = test3 - test1;
-
-				// calculate the face normal
-				V3 n = vectorCrossProduct(line1, line2);
-				n.normalize();
-
-				// TEMP: currently disabled colour lerping to ensure its the view space inconsistency
-				
-				//std::cout << "v1 after model_view: ";  test2.print();
-
-				V3 light_pos = V3(0, 10, 0);
-				light_pos = light_pos * viewMatrix;
-				//light_pos = light_pos * model_view;
-
-				//std::cout << "light after view: "; light_pos.print();
-
-				
-
-				//calculateDiffusePart(test1, n, light_pos, 0.1f, 0.01f);
-			}
+			V3 v1 = mesh->vertices[mesh->faces[i][0]];
+			V3 v2 = mesh->vertices[mesh->faces[i][1]];
+			V3 v3 = mesh->vertices[mesh->faces[i][2]];
 
 			/*
 			STEPS:
@@ -1014,19 +1077,17 @@ void Renderer::renderScene(Scene* scene) {
 			rotateV3(v3, camera->pitch, camera->yaw);
 			*/
 
-			bool correct = false;
-			
-			if (v1 == V3(0, 1, 0) && s == 0) {
-				correct = true;
-			}
+			Colour c1 = v1.c;
+			Colour c2 = v2.c;
+			Colour c3 = v3.c;
 
 			v1 = v1 * model_view;
 			v2 = v2 * model_view;
 			v3 = v3 * model_view;
-			
-			
-			
-			if (correct) v1.id = 5;
+
+			v1.c = c1;
+			v2.c = c2;
+			v3.c = c3;
 
 			// cull backfaces
 			if (isFrontFacing(v1, v2, v3)) {
@@ -1050,6 +1111,7 @@ void Renderer::renderScene(Scene* scene) {
 			// TODO: Its the clipped ones that break
 			// TODO: I BELIEVE ITS BECAUSE OF A NEGATIVE DISTANCE????
 			viewFrustum.clipTriangles(triangles);
+
 		}
 
 		// loop through clipped triangles
@@ -1061,6 +1123,8 @@ void Renderer::renderScene(Scene* scene) {
 			bool fill = true;
 
 			currentTriTemp = t;
+
+			
 			
 			// only apply lighting to filled meshes
 			if (fill && mesh->absorbsLight) {
@@ -1073,19 +1137,35 @@ void Renderer::renderScene(Scene* scene) {
 				colour_v3 = base_colour;
 			}
 
-			colour_v2 = colour_v3;
-			colour_v1 = colour_v3;
+			//colour_v2 = colour_v3;
+			//colour_v1 = colour_v3;
 
-			// TODO: When we move over the corner all the vertices that have x around 16 instantly go to 0.001?? and z 0.1?
-
+			
+			
 			// project vertices to 2D - Camera Space -> Screen Space
 			V2 pv1 = project(triangles[t].v1);
 			V2 pv2 = project(triangles[t].v2);
 			V2 pv3 = project(triangles[t].v3);
 
+
+			// TODO: FRUSTUM CULLING ISN'T SETTING THE TRIANGLE.V.C FOR SOME REASON??????
+			colour_v1 = triangles[t].v1.c;
+			colour_v2 = triangles[t].v2.c;
+			colour_v3 = triangles[t].v3.c;
+
+			colour_v1.print();
+			colour_v2.print();
+			colour_v3.print();
+			std::cout << std::endl;
+
+			//colour_v1 *= pv1.w;
+			//colour_v2 *= pv2.w;
+			//colour_v3 *= pv3.w;
+
 			// this is painfully slow.
 			// clipping 2d triangles shouldn't be the solution as this would create more triangles to draw.
 			drawTriangle(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3); // very slow.
+			
 
 			//drawLine(pv1, pv3, COLOUR::WHITE);
 			//drawLine(pv1, pv2, COLOUR::WHITE);
@@ -1116,6 +1196,7 @@ void Renderer::renderScene(Scene* scene) {
 	Colour colour_v3(0.0f, 0.0f, 1.0f);
 	*/
 	//drawTriangle(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3, true);
+
 }
 
 void Renderer::display() {
@@ -1123,6 +1204,9 @@ void Renderer::display() {
 }
 
 void Renderer::cleanup() {
+
+	IMG_Quit();
+
 	// cleanup all resources
 	SDL_DestroyWindow(window);
 }

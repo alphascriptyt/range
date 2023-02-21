@@ -42,6 +42,10 @@ void V3::makePositive() {
 }
 
 void V3::print() {
-	std::cout << x << " " << y << " " << z << " " << w << std::endl;
+	std::cout << std::fixed << " " << x << " " << y << " " << z << " " << w << std::endl;
+}
+
+void V3::print(const std::string& prefix) {
+	std::cout << std::fixed << prefix << x << " " << y << " " << z << " " << w << std::endl;
 }
 

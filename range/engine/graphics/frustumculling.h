@@ -12,14 +12,13 @@ class ViewFrustum {
 	std::vector<Plane> planes;		// store the planes representing the view frustum
 
 	void setViewFrustumPlanes();	// method to get the planes for the view frustum
-
-	// clipping helper methods
-	void clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, Plane& plane);
-
 public:
 	// constructors
 	ViewFrustum();
 	ViewFrustum(float z_near);
+
+	// clipping helper methods
+	void clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, Plane& plane);
 
 	// methods
 	int isMeshVisible(std::vector<Triangle3D>& triangles);	// determine if a mesh is within the frustum

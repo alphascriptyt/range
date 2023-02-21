@@ -6,7 +6,7 @@ public:
 	// components of the vector
 	float x = 0;
 	float y = 0;
-	float w = 0;
+	float w = 1;
 
 	// constructors
 	V2();									// default sets x,y to {0,0}

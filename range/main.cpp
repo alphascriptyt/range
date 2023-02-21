@@ -9,8 +9,15 @@
 #include <iostream>
 
 class Game : public Engine {
+	float tempW = 1;
+	bool spinning = false;
+
+	Timer timer;
+	
+
 	void onStartup() {
 		camera.setMode(NOCLIP);
+		timer.reset();
 	}
 
 	void onUpdate(float dt) {
@@ -35,15 +42,41 @@ class Game : public Engine {
 
 		}
 		if (keyboardState[SDL_SCANCODE_1]) {
-			camera.physics.position = V3(10, 2, 10);
+			tempW -= dt;
+		}
+		if (keyboardState[SDL_SCANCODE_2]) {
+			tempW += dt;
+		}
+		if (keyboardState[SDL_SCANCODE_EQUALS]) spinning = !spinning;
+
+
+		if (keyboardState[SDL_SCANCODE_3]) {
+			if (timer.elapsed() > 100) {
+				Scene::scenes[0]->getEntity("x_axis")->mesh->yaw += toRadians(90);
+				Scene::scenes[0]->getEntity("x_axis")->mesh->pitch += toRadians(90);
+				Scene::scenes[0]->getEntity("x_axis")->mesh->roll += toRadians(90);
+				timer.reset();
+			}
+			
 		}
 
-		
-		float speed = 3;
+		if (keyboardState[SDL_SCANCODE_4]) {
+			if (timer.elapsed() > 100) {
+				Scene::scenes[0]->getEntity("x_axis")->mesh->yaw -= toRadians(90);
+				Scene::scenes[0]->getEntity("x_axis")->mesh->pitch -= toRadians(90);
+				Scene::scenes[0]->getEntity("x_axis")->mesh->roll -= toRadians(90);
+				timer.reset();
+			}
 
-		Scene::scenes[0]->getEntity("source_cube")->mesh->roll += dt * speed;
-		Scene::scenes[0]->getEntity("source_cube")->mesh->pitch += dt * speed;
-		Scene::scenes[0]->getEntity("source_cube")->mesh->yaw += dt * speed;
+		}
+		
+		float speed = 1;
+
+		if (spinning) Scene::scenes[0]->getEntity("tri")->mesh->yaw += dt * speed;
+
+		//Scene::scenes[0]->getEntity("source_cube")->mesh->roll += dt * speed;
+		//Scene::scenes[0]->getEntity("source_cube")->mesh->pitch += dt * speed;
+		//Scene::scenes[0]->getEntity("source_cube")->mesh->yaw += dt * speed;
 		//camera.physics.position.print();
 		/*
 		Colour c1 = Colour(1, 0, 0);
@@ -65,17 +98,22 @@ class Game : public Engine {
 		
 
 		*/
+		
+		
 		int x, y;
 		SDL_GetMouseState(&x, &y);
 		V2 pv1(x, y);
 		V2 pv2(200, 200);
 		V2 pv3(450, 225);
+		pv1.w = tempW;
 
 		Colour colour_v1(1.0f, 0.0f, 0.0f);
 		Colour colour_v2(0.0f, 1.0f, 0.0f);
 		Colour colour_v3(0.0f, 0.0f, 1.0f);
 		
 		//renderer.drawTriangle(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3);
+		//renderer.drawTriangle2(pv1, pv2, pv3, colour_v1, colour_v2, colour_v3);
+		
 		
 	//	renderer.drawLine(pv1, pv2, colour_v1);
 	//	renderer.drawLine(pv1, pv3, colour_v1);
@@ -106,7 +144,7 @@ LEARNING RESOURCES:
 - Extremely good perspective projection matrix video = https://www.youtube.com/watch?v=U0_ONQQ5ZNM
 
 NOTES:
-- Using DirectX conventions (I like left handed coordinate systems)
+- Using DirectX conventions (I like left handed coordinate systems, positive z away from camera)
 
 - Using DirectX style row-major matrix, vector/matrix multiplications go 4D Vector = (4D Vector * 4D Matrix),
 	left-to-right rule of matrix concatenation
@@ -117,9 +155,6 @@ NOTES:
 	- TODO: apparently right handed is the industry standard? swap?
 
 */
-
-// TODO: SWITCHING TO ROW-MAJOR COLUMN MATRIX AS 4X4 MULTIPLICATIONS WILL BE FASTER.
-// 
 
 int main(int argc, char** argv) {
 	//Engine engine;
@@ -142,9 +177,44 @@ int main(int argc, char** argv) {
 	// i want to take it out of renderer as I don't like it and move it to a 2d primitive file or something?
 	// or move it into triangl2d?
 
+	
+	
+	V3 v1 = V3(1, 0, 1);
+	v1.c = COLOUR::RED;
+	V3 v2 = V3(-1, 0, 1);
+	v2.c = COLOUR::LIME;
+	V3 v3 = V3(0, 1, 1);
+	v3.c = COLOUR::BLUE;
 
+	std::vector<V3>vertices = { v1,v2,v3 };
+	std::vector<std::vector<int>>faces = { {0,1,2}, {2,1,0} };
 
+	Mesh tri(vertices, faces, V3(1, 1, 1));
+	tri.absorbsLight = false;
+	PhysicsData tri_data;
+	tri_data.position = V3(0, 0, 0);
+	scene.createEntity("tri", tri, tri_data);
+	
 
+	/*
+
+	float d = 10;
+	Mesh x_axis(Cube::vertices, Cube::faces, V3(d, 1, 1), COLOUR::WHITE);
+	Mesh y_axis(Cube::vertices, Cube::faces, V3(1, d, 1), COLOUR::WHITE);
+	Mesh z_axis(Cube::vertices, Cube::faces, V3(1, 1, d), COLOUR::WHITE);
+	x_axis.absorbsLight = false;
+	y_axis.absorbsLight = false;
+	z_axis.absorbsLight = false;
+
+	PhysicsData axis_data;
+	axis_data.position = V3();
+
+	scene.createEntity("x_axis", x_axis, axis_data);
+	scene.createEntity("y_axis", y_axis, axis_data);
+	scene.createEntity("z_axis", z_axis, axis_data);
+	
+	*/
+	/*
 	V3 mesh_pos(0, 5, 0);
 	
 	Mesh room("C://Users//olive//Desktop//room.obj", V3(3, 1, 3), COLOUR::WHITE);
@@ -158,19 +228,21 @@ int main(int argc, char** argv) {
 	//			Something to do with the camera direction.
 
 	Mesh mesh_floor(Cube::vertices, Cube::faces, V3(20, 0.1, 20), COLOUR::WHITE);
-
+	
 	PhysicsData mesh_physics;
 	mesh_physics.position = V3(0, 0, 0);
 	scene.createEntity("floor", mesh_floor, mesh_physics);
 
-
+	
 	//LightSource light(V3(0, 10, 0), COLOUR::RED, 1);
-	scene.createLightSource("light", V3(0, 5, 0), COLOUR::RED, 1);
+	//scene.createLightSource("light", V3(0, 5, 0), COLOUR::RED, 10);
 
 	Mesh source(Cube::vertices, Cube::faces, V3(1, 1, 1), COLOUR::RED);
+	
 	PhysicsData cube_physics;
-	cube_physics.position = scene.getLightSource("light")->position;
-	scene.createEntity("source_cube", source, cube_physics);
+	cube_physics.position = scene.getLightSource("light")->position + V3(0, 1, 0);
+	*/
+	//scene.createEntity("source_cube", source, cube_physics);
 
 	// FIXME: Okay.. huge error found, if you face the other direction and press D, you will move left????
 	// is this the source of all my problems? who knows. Only when turning right.

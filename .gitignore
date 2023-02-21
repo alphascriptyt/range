@@ -2,3 +2,6 @@
 .vs
 x64
 range/x64
+range/range/engine/libs
+range/
+.dll

@@ -22,7 +22,7 @@ M4 Entity::makeModelMatrix() {
 	// TODO: Only call this when we change a property?
 	M4 translation;
 	translation.makeIdentity();
-	
+
 	translation[3][0] = physics->position.x;
 	translation[3][1] = physics->position.y;
 	translation[3][2] = physics->position.z;

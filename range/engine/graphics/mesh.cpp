@@ -2,6 +2,7 @@
 
 #include "utils.h"
 #include "mathutils.h"
+#include "vectormaths.h"
 
 #include <cassert>
 #include <string>
@@ -13,8 +14,7 @@ Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, const Colour& c
 	vertices = v;
 	faces = f;
 
-	// set the mesh colour
-	fillColour(colour);
+	init(colour);
 }
 
 Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, const V3& s, const Colour& colour) {
@@ -22,8 +22,7 @@ Mesh::Mesh(std::vector<V3>& v, std::vector<std::vector<int>>& f, const V3& s, co
 	faces = f;
 	size = s;
 
-	// set the mesh colour
-	fillColour(colour);
+	init(colour);
 }
 
 Mesh::Mesh(const std::string& filename, const Colour& colour) {
@@ -31,8 +30,7 @@ Mesh::Mesh(const std::string& filename, const Colour& colour) {
 
 	// try load the file
 	if (loadFromObjFile(filename)) {
-		// set the mesh colour
-		fillColour(colour);
+		init(colour);
 	}
 }
 
@@ -42,8 +40,7 @@ Mesh::Mesh(const std::string& filename, const V3& s, const Colour& colour) {
 
 	// try load the file
 	if (loadFromObjFile(filename)) {
-		// set the mesh colour
-		fillColour(colour);
+		init(colour);
 	}
 }
 
@@ -152,6 +149,21 @@ void Mesh::move(const Uint8* keys, float dt, float camera_yaw) {
 		lightsource->position = pos;
 	}
 	*/
+}
+
+void Mesh::calculateNormals() {
+
+
+}
+
+void Mesh::init(const Colour& colour) {
+	// set the mesh colour
+	fillColour(colour);
+
+	// calculate the face normals
+	// TODO: Not sure this is the best way to do it?
+	
+	calculateNormals();
 }
 
 void Mesh::calculateCenter() {
