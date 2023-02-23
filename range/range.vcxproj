@@ -71,7 +71,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)\range\engine\libs\SDL2\SDL2_image\include;$(SolutionDir)\range\engine\libs\SDL2\SDL2_ttf\include;$(SolutionDir)\range\engine\math\;$(SolutionDir)\range\engine\libs\SDL2\SDL2\include;$(SolutionDir)\range\;$(SolutionDir)\range\engine\utils;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\range\engine\libs\SDL2\SDL2-main\include;$(SolutionDir)\range\engine\libs\SDL2\SDL2_image\include;$(SolutionDir)\range\engine\libs\SDL2\SDL2_ttf\include;$(SolutionDir)\range\engine\math\;$(SolutionDir)\range\engine\libs\SDL2\SDL2\include;$(SolutionDir)\range\;$(SolutionDir)\range\engine\utils;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\range\engine\libs\SDL2\SDL2_image\lib\x64;$(SolutionDir)\range\engine\libs\SDL2\SDL2_ttf\lib\x64;$(SolutionDir)\range\engine\libs\SDL2;$(SolutionDir)\range\engine\libs\SDL2\SDL2\lib\x64;$(LibraryPath)</LibraryPath>
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
@@ -134,11 +134,10 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_ttf.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="engine\graphics\vertex.cpp" />
     <ClCompile Include="engine\physics\AABB.cpp" />
     <ClCompile Include="engine\physics\collision.cpp" />
     <ClCompile Include="engine\physics\physics.cpp" />

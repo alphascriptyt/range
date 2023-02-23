@@ -109,14 +109,12 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 			float t;
 			V3 nv1 = vectorIntersectPlane(inside_points[0], outside_points[0], plane, t);
 			V3 nv2 = vectorIntersectPlane(inside_points[0], outside_points[1], plane, t);
-			
-			
+	
 			Triangle3D tri = Triangle3D(inside_points[0], nv1, nv2);
 			tri.colour = colour;
 			tri.normal = normal;
 			clipped.push_back(tri);
-			
-			
+
 			/*
 			if (in_first) {
 				Triangle3D tri = Triangle3D(inside_points[0], nv1, nv2);
@@ -149,8 +147,6 @@ void ViewFrustum::clipTrianglesAgainstPlane(std::vector<Triangle3D>& triangles, 
 			V3 nv1 = vectorIntersectPlane(inside_points[0], outside_points[0], plane, t);
 			V3 nv2 = vectorIntersectPlane(inside_points[1], outside_points[0], plane, t);
 
-			
-			// TODO: SEEMS LIKE ITS SOMEWHAT TO DO WITH THIS
 			Triangle3D tri1 = Triangle3D(inside_points[0], inside_points[1], nv1);
 			tri1.colour = colour;
 			tri1.normal = normal;

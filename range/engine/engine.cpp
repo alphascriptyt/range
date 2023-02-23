@@ -201,9 +201,9 @@ void Engine::loop() {
 	Uint64 current_ticks = SDL_GetTicks();
 	Uint64 last_ticks = current_ticks;
 
-	FontRenderer title_font("C://Users//olive//source//repos//range//range//engine//res//font//louisgeorgecafe_base.ttf", COLOUR::GOLD, 28);
+	FontRenderer title_font("engine//res//font//louisgeorgecafe_base.ttf", COLOUR::GOLD, 28);
 
-	KeyValueFontRenderer test_font_renderer("C://Users//olive//source//repos//range//range//engine//res//font//louisgeorgecafe_base.ttf", COLOUR::MAROON, 28);
+	KeyValueFontRenderer test_font_renderer("engine//res//font//louisgeorgecafe_base.ttf", COLOUR::MAROON, 28);
 	//KeyValueFontRenderer test_font_renderer("C://Windows//Fonts//segoeui.ttf", COLOUR::MAROON, 18);
 
 	test_font_renderer.createKey("FPS: ");

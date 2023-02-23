@@ -1,5 +1,4 @@
 #include "SDL.h"
-#include "SDL_image.h"
 #include "mesh.h"
 #include "renderer.h"
 #include "mat4D.h"
@@ -111,7 +110,7 @@ bool Renderer::init(const std::string& window_name) {
 	}
 
 	// TEMP: load the global font
-	font = TTF_OpenFont("C:/Users/olive/source/repos/range/range/engine/res/font/louisgeorgecafe_base.ttf", 28);
+	font = TTF_OpenFont("engine/res/font/louisgeorgecafe_base.ttf", 28);
 
 	if (!font) {
 		printf("Failed to open font - %s\n", TTF_GetError());
@@ -121,12 +120,6 @@ bool Renderer::init(const std::string& window_name) {
 	// check for failures creating the rendersurface
 	if (!renderSurface.init(window, WN_WIDTH, WN_HEIGHT, COLOUR::WHITE.toInt(), nearPlane)) {
 		return false;
-	}
-
-	IMG_Init(IMG_INIT_JPG);
-	texture = IMG_Load("C:/Users/olive/source/repos/range/range/wood.jpg");
-	if (!texture) {
-		std::cout << "TEMP: Texture failed to load.\n" << IMG_GetError();
 	}
 
 	// create projection matrix
@@ -294,18 +287,23 @@ void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colo
 	// precalculate x2 - x1
 	float x2x1 = x2 - x1;
 	Colour c2c1 = colour_v2 - colour_v1;
+	float z2z1 = z2 - z1;
 	
 	
-	// clip point to left side
+	// clip point to left sides
 	if (x1 < 0) {
-		colour_v1 = colour_v1 + (c2c1 * ((-x1) / x2x1));
+		float t = (-x1) / x2x1;
+		colour_v1 = colour_v1 + (c2c1 * t);
+		z1 = z1 + (z2z1 * t);
 		x1 = 0;
 	}
 	
 	// clip point to right side
 	if (x2 > WN_WIDTH - 1) {
-		colour_v2 = colour_v2 - (c2c1 * ((x2 - WN_WIDTH) / x2x1));
+		float t = (x2 - WN_WIDTH) / x2x1;
+		colour_v2 = colour_v2 - (c2c1 * t);
 		x2 = WN_WIDTH - 1;
+		z2 = z2 - (z2z1 * t);
 	}
 	
 	// scale x in terms of y
@@ -316,7 +314,7 @@ void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colo
 	// fill line in array
 
 	// calculate depth increment
-	float z_increment = (z2 - z1) / x2x1;
+	float z_increment = z2z1 / x2x1;
 
 	// calculate colour increment
 	//sColour colour_step = (colour_v2 - colour_v1) / x2x1;
@@ -345,8 +343,8 @@ void Renderer::drawScanLine(int x1, int x2, int y, Colour colour_v1, Colour colo
 		float z = 1.0f / z1;
 
 		//renderSurface.setIndex(x1, colour.toInt(), z1); // TODO: I think this is actually the slow part!! look into this.
-		//renderSurface.setIndex(x1, ((int)(r * z) << 16) | ((int)(g * z) << 8) | ((int)(b * z)), z1); // TODO: I think this is actually the slow part!! look into this.
-		renderSurface.setIndex(x1, ((int)(r) << 16) | ((int)(g) << 8) | ((int)(b)), z1); // TODO: I think this is actually the slow part!! look into this.
+		renderSurface.setIndex(x1, ((int)(r * z) << 16) | ((int)(g * z) << 8) | ((int)(b * z)), z1); // TODO: I think this is actually the slow part!! look into this.
+		//renderSurface.setIndex(x1, ((int)(r) << 16) | ((int)(g) << 8) | ((int)(b)), z1); // TODO: I think this is actually the slow part!! look into this.
 		
 		
 		// increment depth and colour
@@ -534,15 +532,8 @@ void Renderer::drawTriangle(V2& v1, V2& v2, V2& v3, Colour& colour_v1, Colour& c
 	//std::cout << " v3.w: " << v3.w;
 	//std::cout << " w: " << w << std::endl;
 	 
-	if (x < -3000) { 
-		//std::cout << "v1.x: " << v1.x << std::endl << "v3.x: " << v3.x << std::endl << "v3.y: " << v3.y << std::endl;
-	}
-
 	V2 v4(x, v2.y, w);
-	std::cout << v1.x << std::endl;
 	Colour colour_v4 = colour_v1 + (colour_v3 - colour_v1) * t;
-	
-
 
 	//drawLine(v2, v4, COLOUR::WHITE);
 	//drawScanLine(v2.x, v4.x, v2.y, COLOUR::WHITE, COLOUR::WHITE);
@@ -1111,25 +1102,20 @@ void Renderer::renderScene(Scene* scene) {
 			// TODO: Its the clipped ones that break
 			// TODO: I BELIEVE ITS BECAUSE OF A NEGATIVE DISTANCE????
 			viewFrustum.clipTriangles(triangles);
-
 		}
 
 		// loop through clipped triangles
-		for (int t = 0; t < triangles.size(); ++t) {
+		for (auto& tri : triangles) {
 			// lighting
-			Colour base_colour = triangles[t].colour;
+			Colour base_colour = tri.colour;
 			Colour colour_v1, colour_v2, colour_v3;
 
 			bool fill = true;
-
-			currentTriTemp = t;
-
-			
 			
 			// only apply lighting to filled meshes
 			if (fill && mesh->absorbsLight) {
 				// apply point lighting
-				getVertexColours(triangles[t].v1, triangles[t].v2, triangles[t].v3, base_colour, colour_v1, colour_v2, colour_v3);
+				getVertexColours(tri.v1, tri.v2, tri.v3, base_colour, colour_v1, colour_v2, colour_v3);
 			}
 			else {
 				colour_v1 = base_colour;
@@ -1140,27 +1126,27 @@ void Renderer::renderScene(Scene* scene) {
 			//colour_v2 = colour_v3;
 			//colour_v1 = colour_v3;
 
-			
+			colour_v1 = tri.v1.c;
+			colour_v2 = tri.v2.c;
+			colour_v3 = tri.v3.c;
+
 			
 			// project vertices to 2D - Camera Space -> Screen Space
-			V2 pv1 = project(triangles[t].v1);
-			V2 pv2 = project(triangles[t].v2);
-			V2 pv3 = project(triangles[t].v3);
+			V2 pv1 = project(tri.v1);
+			V2 pv2 = project(tri.v2);
+			V2 pv3 = project(tri.v3);
 
 
-			// TODO: FRUSTUM CULLING ISN'T SETTING THE TRIANGLE.V.C FOR SOME REASON??????
-			colour_v1 = triangles[t].v1.c;
-			colour_v2 = triangles[t].v2.c;
-			colour_v3 = triangles[t].v3.c;
+			
+			colour_v1 *= pv1.w;
+			colour_v2 *= pv2.w;
+			colour_v3 *= pv3.w;
 
 			colour_v1.print();
 			colour_v2.print();
 			colour_v3.print();
 			std::cout << std::endl;
 
-			//colour_v1 *= pv1.w;
-			//colour_v2 *= pv2.w;
-			//colour_v3 *= pv3.w;
 
 			// this is painfully slow.
 			// clipping 2d triangles shouldn't be the solution as this would create more triangles to draw.
@@ -1204,9 +1190,6 @@ void Renderer::display() {
 }
 
 void Renderer::cleanup() {
-
-	IMG_Quit();
-
 	// cleanup all resources
 	SDL_DestroyWindow(window);
 }

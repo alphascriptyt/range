@@ -166,6 +166,7 @@ int main(int argc, char** argv) {
 		printf("Failed to startup.\n");
 		return -1;
 	}
+
 	
 	// keep engine loading of scenes so i can use 3denvcreator to make map?
 

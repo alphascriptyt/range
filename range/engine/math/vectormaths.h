@@ -39,9 +39,10 @@ inline V3 vectorIntersectPlane(V3& v1, V3& v2, Plane& plane, float& t) {
 	V3 line_to_intersect = line_start_to_end * t;
 
 	V3 nv = v1 + line_to_intersect;
-	//nv.c = v1.c + (v2.c - v1.c) * t;
-	nv.c = COLOUR::WHITE;
-	std::cout << "towhite\n";
+	//nv.c = v2.c;
+	nv.c = v1.c + (v2.c - v1.c) * t;
+	//nv.c = COLOUR::WHITE;
+	
 	//std::cout << "col: "; nv.c.print();
 
 	return nv;
